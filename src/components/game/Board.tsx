@@ -164,7 +164,7 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
           return (
             <g key={`hl-${row}-${col}`}>
               {isLastMove && (
-                <rect x={cx - 20} y={cy - 20} width={40} height={40} fill="rgba(255,210,100,0.25)" rx="4" />
+                <circle cx={cx} cy={cy} r={24} fill="rgba(255,210,100,0.3)" />
               )}
               {isCheck && (
                 <circle cx={cx} cy={cy} r={22} fill="rgba(232,93,74,0.4)" />

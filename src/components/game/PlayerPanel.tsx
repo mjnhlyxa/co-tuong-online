@@ -36,11 +36,9 @@ export default function PlayerPanel({ game, color, position }: PlayerPanelProps)
           <span className="text-sm font-medium text-[var(--c-text)] truncate">{player.name}</span>
           <Badge tier={tier} elo={elo} />
         </div>
-        {isCurrentTurn && (
-          <div className="text-[10px] text-[var(--c-accent)] mt-0.5">
-            {color === 'red' ? t('redTurn') : t('blackTurn')}
-          </div>
-        )}
+        <div className={`text-[10px] mt-0.5 ${isCurrentTurn ? 'text-[var(--c-accent)]' : 'invisible'}`}>
+          {color === 'red' ? t('redTurn') : t('blackTurn')}
+        </div>
       </div>
 
       {/* Timer */}
