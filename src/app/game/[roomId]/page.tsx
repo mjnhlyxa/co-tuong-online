@@ -89,24 +89,36 @@ export default function GamePage({ params }: { params: Params }) {
   if (!game) {
     return (
       <div className="min-h-screen bg-[var(--c-bg)] flex flex-col">
-        <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)]">
-          <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-sm flex items-center gap-1.5">← Sảnh</button>
+        <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)]/95 backdrop-blur">
+          <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-sm flex items-center gap-1.5 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M12.172 7H4a1 1 0 000 2h8.172l-2.122 2.121a1 1 0 001.414 1.415l3.243-3.243a1 1 0 000-1.414L13.464 4.636a1 1 0 00-1.414 1.414L12.172 7z" transform="rotate(180 8 8)"/>
+            </svg>
+            {t('backToLobby').replace('🏠 ', '')}
+          </button>
           <div className="flex items-center gap-2">
             <ThemePicker />
             <LanguageSelector value={language} onChange={setLanguage} compact />
           </div>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
-          <div className="text-5xl">♟</div>
-          <div className="text-[var(--c-text)] text-xl font-semibold">Đang chờ đối thủ...</div>
-          <div className="text-[var(--c-muted)] text-sm">Chia sẻ link này cho bạn bè để bắt đầu</div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-8 px-4 text-center">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-[var(--c-accent-bg)] border-2 border-[var(--c-accent)]/30 flex items-center justify-center">
+              <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: '44px', color: 'var(--c-accent)', fontWeight: 700, lineHeight: 1 }}>將</span>
+            </div>
+            <div className="absolute inset-0 rounded-full border-2 border-[var(--c-accent)]/40 animate-ping" />
+          </div>
+          <div>
+            <div className="text-[var(--c-text)] text-xl font-semibold mb-2">{t('waitingForOpponentToJoin')}</div>
+            <div className="text-[var(--c-muted)] text-sm">{t('shareLink').replace('🔗 ', '')} — {t('copyLink').toLowerCase()}</div>
+          </div>
           {typeof window !== 'undefined' && (
-            <div className="flex items-center gap-2 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-lg px-4 py-3">
-              <code className="text-[var(--c-accent)] text-sm">{window.location.href}</code>
-              <CopyButton text={window.location.href} label="Copy" />
+            <div className="flex items-center gap-2 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl px-4 py-3 shadow-sm max-w-sm w-full">
+              <code className="text-[var(--c-accent)] text-sm flex-1 truncate text-left">{window.location.href}</code>
+              <CopyButton text={window.location.href} label={t('copyLink')} />
             </div>
           )}
-          <Button variant="secondary" onClick={() => router.push('/')}>Huỷ và về sảnh</Button>
+          <Button variant="secondary" onClick={() => router.push('/')}>{t('backToLobby').replace('🏠 ', '')}</Button>
         </div>
       </div>
     )
@@ -146,15 +158,18 @@ export default function GamePage({ params }: { params: Params }) {
   return (
     <div className="min-h-screen bg-[var(--c-bg)] flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)]">
-        <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] flex items-center gap-1.5 text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+      <header className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--c-border)] bg-[var(--c-surface)]/95 backdrop-blur">
+        <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] flex items-center gap-1.5 text-sm transition-colors">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
             <path d="M3.828 7H12a1 1 0 110 2H3.828l2.122 2.121a1 1 0 11-1.414 1.415L1.293 9.293a1 1 0 010-1.414l3.243-3.243a1 1 0 011.414 1.414L3.828 7z" />
           </svg>
-          Sảnh
+          {t('backToLobby').replace('🏠 ', '')}
         </button>
+        <div className="flex items-center gap-1.5 text-[var(--c-muted)] text-xs font-mono bg-[var(--c-elevated)] border border-[var(--c-border)] px-2 py-1 rounded hidden sm:flex">
+          #{roomId.slice(0, 8)}
+        </div>
         <div className="flex items-center gap-2">
-          <CopyButton text={shareUrl} label="Chia sẻ" />
+          <CopyButton text={shareUrl} label={t('shareLink').replace('🔗 ', '')} />
           <ThemePicker />
           <LanguageSelector value={language} onChange={setLanguage} compact />
         </div>

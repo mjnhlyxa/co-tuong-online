@@ -21,7 +21,7 @@ export function usePlayer() {
         if (data.exists) {
           setPlayer(data)
           savePlayerName(data.name)
-          saveLanguage(data.preferences?.language ?? 'vi')
+          if (data.preferences?.language) saveLanguage(data.preferences.language)
         } else {
           setNeedsName(true)
         }

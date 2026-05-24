@@ -152,17 +152,21 @@ export default function LobbyPage() {
   return (
     <div className="min-h-screen bg-[var(--c-bg)] flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-[var(--c-surface)] border-b border-[var(--c-border)]">
+      <header className="sticky top-0 z-10 bg-[var(--c-surface)]/95 backdrop-blur border-b border-[var(--c-border)]">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-bold text-[var(--c-text)]" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              象棋 <span className="text-[var(--c-muted)] font-normal text-base">Cờ Tướng</span>
-            </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--c-accent-bg)] border border-[var(--c-accent)]/25 flex-shrink-0">
+              <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: '17px', lineHeight: '1', color: 'var(--c-accent)', fontWeight: 700 }}>將</span>
+            </div>
+            <div>
+              <div className="text-sm font-bold text-[var(--c-text)] leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Cờ Tướng Online</div>
+              <div className="text-[10px] text-[var(--c-muted)] leading-none">Xiangqi · 象棋</div>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {player && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-[var(--c-text)] hidden sm:block">{player.name}</span>
+                <span className="text-sm text-[var(--c-text)] hidden sm:block font-medium">{player.name}</span>
                 <Badge tier={player.ranking.tier} elo={player.ranking.elo} />
               </div>
             )}
@@ -173,21 +177,38 @@ export default function LobbyPage() {
       </header>
 
       {/* Hero */}
-      <div className="bg-gradient-to-b from-[var(--c-surface)] to-[var(--c-bg)] py-8 px-4">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-4">
+      <div className="bg-gradient-to-b from-[var(--c-surface)] to-[var(--c-bg)] border-b border-[var(--c-border)] py-10 px-4">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-6">
           <div className="flex-1 text-center sm:text-left">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--c-text)] mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            {!roomsLoading && (
+              <div className="inline-flex items-center gap-1.5 bg-[var(--c-accent-bg)] border border-[var(--c-accent)]/30 text-[var(--c-accent)] text-xs font-medium px-3 py-1 rounded-full mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--c-accent)] animate-pulse inline-block" />
+                {rooms.length > 0 ? `${rooms.length} phòng đang chờ` : 'Đang tải phòng...'}
+              </div>
+            )}
+            <h2 className="text-3xl sm:text-4xl font-bold text-[var(--c-text)] mb-3 leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
               {t('playOnline')}
             </h2>
-            <p className="text-[var(--c-muted)] text-sm">{t('noLoginRequired')}</p>
+            <p className="text-[var(--c-muted)]">{t('noLoginRequired')}</p>
+            <div className="flex gap-3 mt-6 justify-center sm:justify-start flex-wrap">
+              <Button variant="primary" size="lg" onClick={() => setShowCreate(true)} disabled={!player}>
+                + {t('createRoom')}
+              </Button>
+              <Button variant="secondary" size="lg" onClick={() => setShowJoin(true)} disabled={!player}>
+                {t('joinByCode')}
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2 sm:gap-3 flex-wrap justify-center">
-            <Button variant="primary" size="lg" onClick={() => setShowCreate(true)} disabled={!player}>
-              {t('createRoom')}
-            </Button>
-            <Button variant="secondary" size="lg" onClick={() => setShowJoin(true)} disabled={!player}>
-              {t('joinByCode')}
-            </Button>
+          {/* Decorative chess board */}
+          <div className="hidden sm:block opacity-50 flex-shrink-0">
+            <svg width="96" height="96" viewBox="0 0 96 96" fill="none">
+              {Array.from({ length: 64 }, (_, i) => {
+                const row = Math.floor(i / 8), col = i % 8
+                const isLight = (row + col) % 2 === 0
+                return <rect key={i} x={col * 12} y={row * 12} width="12" height="12" fill={isLight ? '#c8a96e' : '#8b6914'} />
+              })}
+              <text x="48" y="56" textAnchor="middle" fontSize="28" fontFamily="'Noto Serif SC', serif" fontWeight="700" fill="white" style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))' }}>將</text>
+            </svg>
           </div>
         </div>
       </div>
@@ -195,8 +216,14 @@ export default function LobbyPage() {
       {/* Room list */}
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[var(--c-text)] font-semibold">{t('waitingRooms')}</h3>
-          <button onClick={fetchRooms} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-sm transition-colors">
+          <div className="flex items-center gap-2">
+            <h3 className="text-[var(--c-text)] font-semibold">{t('waitingRooms')}</h3>
+            {!roomsLoading && rooms.length > 0 && (
+              <span className="text-xs bg-[var(--c-elevated)] text-[var(--c-muted)] px-2 py-0.5 rounded-full font-medium">{rooms.length}</span>
+            )}
+          </div>
+          <button onClick={fetchRooms} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-xs transition-colors flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
             {t('reload')}
           </button>
         </div>
@@ -221,10 +248,20 @@ export default function LobbyPage() {
         {roomsLoading ? (
           <div className="text-center text-[var(--c-muted)] py-12">{t('loading')}</div>
         ) : rooms.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-[var(--c-dim)] text-4xl mb-3">♟</div>
-            <div className="text-[var(--c-muted)] text-sm">{t('noRoomsYet')}</div>
-            <div className="text-[var(--c-muted)] text-xs mt-1">{t('createFirst')}</div>
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--c-elevated)] border border-[var(--c-border)] mb-4">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                {[0,1,2,3].map(row => [0,1,2,3].map(col => (
+                  <rect key={`${row}-${col}`} x={col * 8} y={row * 8} width="8" height="8"
+                    fill={(row + col) % 2 === 0 ? 'var(--c-border)' : 'var(--c-elevated)'}
+                    opacity="0.8"
+                  />
+                )))}
+                <text x="16" y="20" textAnchor="middle" fontSize="12" fontFamily="'Noto Serif SC', serif" fontWeight="700" fill="var(--c-muted)">將</text>
+              </svg>
+            </div>
+            <div className="text-[var(--c-text)] font-medium mb-1">{t('noRoomsYet')}</div>
+            <div className="text-[var(--c-muted)] text-sm">{t('createFirst')}</div>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">

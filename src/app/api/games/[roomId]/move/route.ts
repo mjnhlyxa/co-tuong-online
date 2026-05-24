@@ -33,7 +33,9 @@ export async function POST(
     if (myColor !== game.currentTurn) return NextResponse.json({ error: 'WRONG_TURN' }, { status: 400 })
     if (moveNumber !== game.currentMoveNumber) return NextResponse.json({ error: 'STALE_MOVE_NUMBER' }, { status: 409 })
 
-    const board = game.boardState as (string | null)[][]
+    const board = (game.boardState as unknown[][]).map(row =>
+      row.map(cell => (cell ?? null) as string | null)
+    )
     const move = { from, to }
 
     if (!isLegalMove(board, move, myColor)) {

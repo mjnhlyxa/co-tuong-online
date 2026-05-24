@@ -12,7 +12,7 @@ const fetcher = async (url: string) => {
 
 export function useGame(roomId: string, deviceId: string) {
   const { data, error, mutate } = useSWR<GameState>(
-    roomId ? `/api/games/${roomId}?deviceId=${deviceId}` : null,
+    roomId && deviceId ? `/api/games/${roomId}?deviceId=${deviceId}` : null,
     fetcher,
     { refreshInterval: 1500, dedupingInterval: 500 }
   )
