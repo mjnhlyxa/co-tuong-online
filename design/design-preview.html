@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cờ Tướng Online — Design Preview v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --raised:#242836; --border:#2e3347;
+  --text:#e8eaf0; --muted:#7c8299; --disabled:#454a5e;
+  --red:#e85d4a; --red-l:#ff8577;
+  --blk:#a0b0c8; --blk-l:#c8d5e8;
+  --acc:#4f9cf7; --acc-h:#6fb0ff; --acc-s:#1d3557;
+  --ok:#4caf70; --warn:#f5a623;
+  --r4:4px; --r8:8px; --r12:12px; --rF:9999px;
+  --sh-card:0 2px 8px rgba(0,0,0,.4);
+  --sh-modal:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{display:flex;min-height:100vh;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+
+/* ─── Sidebar ─────────────────────────────────────────── */
+#sidebar{width:210px;min-width:210px;background:var(--surface);border-right:1px solid var(--border);padding:12px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+#sidebar .logo{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;padding:4px 14px 12px;color:var(--text);border-bottom:1px solid var(--border);margin-bottom:8px}
+#sidebar .logo span{color:var(--red)}
+.ng{margin-bottom:4px}
+.nl{font-size:10px;font-weight:700;color:var(--disabled);text-transform:uppercase;letter-spacing:.08em;padding:10px 14px 3px}
+.ni{display:block;width:100%;text-align:left;background:none;border:none;color:var(--muted);font-size:12.5px;padding:6px 14px;cursor:pointer;border-left:2px solid transparent;font-family:inherit;transition:all .1s}
+.ni:hover{background:var(--raised);color:var(--text)}
+.ni.on{color:var(--acc);border-left-color:var(--acc);background:var(--acc-s)}
+
+/* ─── Main ────────────────────────────────────────────── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+#toolbar em{font-style:normal;font-size:11px;color:var(--muted)}
+.vb{background:var(--raised);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:var(--r4);cursor:pointer;font-family:inherit;transition:all .1s}
+.vb:hover{border-color:var(--acc);color:var(--acc)}
+.vb.on{background:var(--acc-s);border-color:var(--acc);color:var(--acc)}
+#slabel{margin-left:auto;font-size:11px;color:var(--disabled)}
+#pout{flex:1;overflow:auto;padding:20px;display:flex;justify-content:center}
+#pframe{width:100%;max-width:1100px;transition:max-width .2s}
+#pframe.mob{max-width:390px}
+
+/* ─── Screens ─────────────────────────────────────────── */
+.scr{display:none}.scr.on{display:block}
+
+/* ─── Shared ──────────────────────────────────────────── */
+.hdr{display:flex;align-items:center;gap:10px;padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--border)}
+.hdr .logo{font-family:'Outfit',sans-serif;font-weight:700;font-size:16px;color:var(--text);display:flex;align-items:center;gap:5px}
+.hdr .logo span{color:var(--red)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:all .1s;white-space:nowrap}
+.btn-p{background:var(--acc);color:#fff}.btn-p:hover{background:var(--acc-h)}
+.btn-s{background:var(--raised);border:1px solid var(--border);color:var(--text)}.btn-s:hover{border-color:var(--acc);color:var(--acc)}
+.btn-g{background:transparent;color:var(--muted)}.btn-g:hover{background:var(--raised);color:var(--text)}
+.btn-d{background:rgba(232,93,74,.12);border:1px solid rgba(232,93,74,.3);color:var(--red)}
+.btn-sm{padding:4px 10px;font-size:12px}.btn-lg{padding:11px 22px;font-size:15px}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:var(--rF);font-size:11px;font-weight:600}
+.b-pub{background:rgba(79,156,247,.15);color:var(--acc);border:1px solid rgba(79,156,247,.3)}
+.b-tier-g{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3)}
+.b-tier-s{background:rgba(160,176,200,.15);color:var(--blk-l);border:1px solid rgba(160,176,200,.3)}
+.b-tier-p{background:rgba(79,156,247,.15);color:#a78bfa;border:1px solid rgba(147,114,251,.3)}
+.b-ok{background:rgba(76,175,112,.15);color:var(--ok)}
+.divider{border:none;border-top:1px solid var(--border)}
+
+/* ─── Language dropdown (header) ─────────────────────── */
+.lang-sel{position:relative;display:inline-flex;align-items:center}
+.lang-sel-btn{background:var(--raised);border:1px solid var(--border);color:var(--muted);font-size:12px;padding:4px 10px;border-radius:var(--r4);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;transition:all .1s}
+.lang-sel-btn:hover{border-color:var(--acc);color:var(--acc)}
+
+/* ─── Lobby ───────────────────────────────────────────── */
+.hero{text-align:center;padding:40px 20px 32px;background:linear-gradient(180deg,rgba(79,156,247,.06) 0%,transparent 100%)}
+.hero h1{font-family:'Outfit',sans-serif;font-size:32px;font-weight:700;margin-bottom:8px}
+.hero h1 span{color:var(--red)}
+.hero p{color:var(--muted);font-size:15px;margin-bottom:24px}
+.hero-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.lobby-body{max-width:860px;margin:0 auto;padding:0 20px 40px}
+.sec-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.sec-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-chip{background:var(--raised);border:1px solid var(--border);color:var(--muted);font-size:12px;padding:4px 12px;border-radius:var(--rF);cursor:pointer;font-family:inherit;transition:all .1s}
+.filter-chip:hover{border-color:var(--acc);color:var(--acc)}
+.filter-chip.on{background:var(--acc-s);border-color:var(--acc);color:var(--acc)}
+.room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.rc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);padding:14px;box-shadow:var(--sh-card);transition:border-color .1s}
+.rc:hover{border-color:var(--acc)}
+.rc-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pdot-r{background:var(--red);box-shadow:0 0 5px rgba(232,93,74,.4)}
+.rc-name{font-weight:600;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-meta{font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.elo-tag{font-size:10px;background:var(--raised);border:1px solid var(--border);padding:1px 6px;border-radius:var(--rF);color:var(--muted)}
+.timer-tag{font-size:10px;color:var(--muted)}
+
+/* Player info in header */
+.player-hdr{display:flex;align-items:center;gap:6px;margin-left:auto}
+.player-hdr .name{font-size:13px;font-weight:600}
+.player-hdr .elo-pill{font-size:11px;background:var(--raised);border:1px solid var(--border);padding:2px 8px;border-radius:var(--rF);color:var(--muted)}
+
+/* Legacy lang-btn kept for compat */
+.lang-btn{background:var(--raised);border:1px solid var(--border);color:var(--muted);font-size:12px;padding:4px 10px;border-radius:var(--r4);cursor:pointer;font-family:inherit}
+
+/* ─── First Visit Modal ───────────────────────────────── */
+.fv-overlay{min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.fv-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);box-shadow:var(--sh-modal);width:380px;max-width:100%;overflow:hidden}
+.fv-header{padding:28px 28px 0;text-align:center}
+.fv-header .icon{font-size:48px;margin-bottom:12px}
+.fv-header h2{font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px}
+.fv-header p{font-size:13px;color:var(--muted)}
+.fv-body{padding:24px 28px}
+.fv-body label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.fv-input{width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--r8);color:var(--text);font-size:15px;padding:10px 12px;outline:none;font-family:inherit;transition:border-color .1s}
+.fv-input:focus{border-color:var(--acc)}
+.fv-hint{font-size:11px;color:var(--disabled);margin-top:6px}
+.fv-footer{padding:4px 28px 24px}
+.lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
+.lang-option{background:var(--raised);border:1px solid var(--border);border-radius:var(--r8);padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);transition:all .1s}
+.lang-option:hover,.lang-option.on{border-color:var(--acc);color:var(--acc);background:var(--acc-s)}
+
+/* ─── Game Layout ─────────────────────────────────────── */
+.game-scr{min-height:100vh;background:var(--bg);display:flex;flex-direction:column}
+.game-body{display:grid;grid-template-columns:190px 1fr 230px;gap:14px;padding:16px;max-width:1050px;margin:0 auto;width:100%}
+.side-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);padding:14px;display:flex;flex-direction:column;gap:10px;height:fit-content}
+.pi{background:var(--raised);border:1px solid var(--border);border-radius:var(--r8);padding:12px;display:flex;flex-direction:column;gap:6px;transition:border-color .15s}
+.pi.active{border-color:var(--acc);background:var(--acc-s)}
+.pi.check{border-color:var(--red);background:rgba(232,93,74,.06)}
+.pi .prow{display:flex;align-items:center;gap:7px}
+.pi .pdot2{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.pi .pname{font-weight:600;font-size:13px}
+.pi .pylabel{font-size:10px;color:var(--muted)}
+.pi .turn{font-size:11px;font-weight:700}
+.t-mine{color:var(--acc)}.t-wait{color:var(--disabled)}.t-check{color:var(--red)}
+
+/* Timer */
+.timer{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:.02em;padding:6px 0 2px}
+.timer.active{color:var(--text)}
+.timer.paused{color:var(--disabled)}
+.timer.low{color:var(--warn)}
+.timer.critical{color:var(--red);animation:timer-pulse 1s ease-in-out infinite}
+@keyframes timer-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* Board area */
+.board-area{display:flex;flex-direction:column;align-items:center;gap:10px}
+.sbar{padding:7px 16px;border-radius:var(--r8);font-size:13px;font-weight:600;text-align:center;width:100%;max-width:470px}
+.sbar-my{background:rgba(79,156,247,.1);color:var(--acc);border:1px solid rgba(79,156,247,.18)}
+.sbar-w{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+.sbar-chk{background:rgba(232,93,74,.1);color:var(--red);border:1px solid rgba(232,93,74,.2)}
+
+/* Board SVG wrapper */
+.board-wrap{border-radius:var(--r8);overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.5)}
+
+/* Waiting overlay on board */
+.board-rel{position:relative;display:inline-block}
+.wait-ov{position:absolute;inset:0;background:rgba(15,17,23,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:var(--r8)}
+.wait-ov p{color:var(--muted);font-size:13px}
+.share-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r8);padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px}
+.share-url{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px}
+.spin{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Move history */
+.hist-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);padding:14px;height:fit-content}
+.hist-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.mv-list{display:flex;flex-direction:column;gap:1px}
+.mv-row{display:grid;grid-template-columns:20px 1fr 1fr;gap:4px;align-items:center;padding:3px 5px;border-radius:var(--r4)}
+.mv-row:hover{background:var(--raised)}
+.mv-row.latest{background:var(--raised)}
+.mv-n{font-size:10px;color:var(--disabled);font-family:'JetBrains Mono',monospace}
+.mv-r{font-size:11px;color:var(--red-l);font-family:'JetBrains Mono',monospace}
+.mv-b{font-size:11px;color:var(--blk-l);font-family:'JetBrains Mono',monospace}
+
+/* ─── Modal ───────────────────────────────────────────── */
+.mo-wrap{position:relative;min-height:100vh}
+.mo-bg{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(3px);z-index:10;display:flex;align-items:center;justify-content:center}
+.mo-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);box-shadow:var(--sh-modal);width:420px;max-width:calc(100vw - 32px)}
+.mo-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border)}
+.mo-title{font-weight:600;font-size:15px}
+.mo-x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 3px;line-height:1}
+.mo-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.fi{background:var(--raised);border:1px solid var(--border);border-radius:var(--r8);color:var(--text);font-size:14px;padding:8px 11px;outline:none;font-family:inherit;transition:border-color .1s;width:100%}
+.fi:focus{border-color:var(--acc)}
+.rg{display:flex;flex-direction:column;gap:6px}
+.ro{display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid var(--border);border-radius:var(--r8);cursor:pointer;transition:all .1s}
+.ro.on{border-color:var(--acc);background:var(--acc-s)}
+.ro input{accent-color:var(--acc);margin-top:2px}
+.ro .rt strong{font-size:13px;font-weight:600;display:block}
+.ro .rt span{font-size:11px;color:var(--muted)}
+/* Time control grid */
+.tc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tc-opt{background:var(--raised);border:1px solid var(--border);border-radius:var(--r8);padding:8px;text-align:center;cursor:pointer;transition:all .1s;font-size:13px;font-weight:600}
+.tc-opt:hover{border-color:var(--acc);color:var(--acc)}
+.tc-opt.on{border-color:var(--acc);background:var(--acc-s);color:var(--acc)}
+.mo-ftr{padding:12px 20px 16px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border)}
+
+/* Toggle switch */
+.toggle-row{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r8)}
+.toggle-info{flex:1}
+.toggle-info strong{font-size:13px;font-weight:600;display:block;color:var(--text)}
+.toggle-info span{font-size:11px;color:var(--muted)}
+.toggle-pill{position:relative;width:40px;height:22px;flex-shrink:0;margin-top:2px}
+.toggle-pill input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--ok);border-radius:var(--rF);cursor:pointer;transition:background .2s}
+.toggle-track::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;right:3px;transition:right .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle-pill.off .toggle-track{background:var(--disabled)}
+.toggle-pill.off .toggle-track::after{right:auto;left:3px}
+
+/* ─── Result ──────────────────────────────────────────── */
+.res-back{min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.res-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);box-shadow:var(--sh-modal);width:420px;max-width:100%;position:relative;overflow:hidden}
+.res-hdr{padding:28px 28px 20px;text-align:center;border-bottom:1px solid var(--border)}
+.res-icon{font-size:44px;margin-bottom:10px}
+.res-title{font-family:'Outfit',sans-serif;font-size:26px;font-weight:700}
+.res-win .res-title{color:#fbbf24}
+.res-lose .res-title{color:var(--muted)}
+.res-reason{font-size:13px;color:var(--muted);margin-top:5px}
+.res-stats{padding:18px 28px;border-bottom:1px solid var(--border)}
+.stats-row{display:flex;align-items:center;justify-content:space-between}
+.sp{text-align:center}
+.sp-name{font-weight:600;font-size:13px}
+.sp-name.r{color:var(--red)}.sp-name.b{color:var(--blk-l)}
+.sp-info{font-size:11px;color:var(--muted);margin-top:2px}
+.sp-result{font-size:11px;font-weight:700;margin-top:2px}
+.sp-result.win{color:var(--ok)}.sp-result.lose{color:var(--disabled)}
+.st-vs{font-size:18px;color:var(--disabled)}
+.st-dur{text-align:center;margin-top:10px;font-size:12px;color:var(--muted)}
+.res-acts{padding:16px 28px;display:flex;gap:8px}
+.res-acts .btn{flex:1;justify-content:center}
+/* confetti */
+.cbox{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;pointer-events:none}
+.cp{position:absolute;width:7px;height:7px;border-radius:2px;animation:cf 2.5s ease-in forwards}
+@keyframes cf{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(320px) rotate(720deg);opacity:0}}
+
+/* ─── Chat & Spectators panel ─────────────────────────── */
+.right-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);display:flex;flex-direction:column;height:fit-content;overflow:hidden}
+.tabs-row{display:flex;border-bottom:1px solid var(--border)}
+.tab-btn{flex:1;padding:9px 6px;font-size:12px;font-weight:600;background:none;border:none;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .1s;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab-btn.on{color:var(--acc);border-bottom-color:var(--acc)}
+.tab-btn:hover:not(.on){color:var(--text)}
+.chat-body{padding:10px;display:flex;flex-direction:column;gap:7px;min-height:220px;max-height:340px;overflow-y:auto}
+.chat-msg{display:flex;flex-direction:column;gap:2px;max-width:90%}
+.chat-msg.right{align-self:flex-end;align-items:flex-end}
+.chat-msg.left{align-self:flex-start;align-items:flex-start}
+.chat-bubble{padding:7px 10px;border-radius:var(--r8);font-size:12px;line-height:1.4}
+.chat-bubble.red-bubble{background:rgba(79,156,247,.18);color:var(--text);border-radius:var(--r8) 0 var(--r8) var(--r8)}
+.chat-bubble.gray-bubble{background:var(--raised);color:var(--muted);border-radius:0 var(--r8) var(--r8) var(--r8)}
+.chat-author{font-size:10px;color:var(--disabled)}
+.chat-input-row{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border)}
+.chat-input{flex:1;background:var(--raised);border:1px solid var(--border);border-radius:var(--r8);color:var(--text);font-size:12px;padding:7px 10px;outline:none;font-family:inherit}
+.chat-input:focus{border-color:var(--acc)}
+.chat-send{background:var(--acc);border:none;color:#fff;border-radius:var(--r8);padding:7px 10px;cursor:pointer;font-size:13px}
+
+/* Spectator list */
+.spec-section{padding:10px 14px;border-bottom:1px solid var(--border)}
+.spec-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.spec-item{font-size:12px;color:var(--muted);padding:2px 0;display:flex;align-items:center;gap:5px}
+
+/* ─── Take-back notification banner ──────────────────── */
+.takeback-banner{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);padding:14px 16px;box-shadow:var(--sh-modal);width:100%;max-width:470px;display:flex;flex-direction:column;gap:10px}
+.tb-title{font-size:13px;font-weight:600;color:var(--text)}
+.tb-progress-wrap{display:flex;align-items:center;gap:10px}
+.tb-bar-bg{flex:1;height:6px;background:var(--raised);border-radius:var(--rF);overflow:hidden}
+.tb-bar-fill{height:100%;width:68%;background:var(--warn);border-radius:var(--rF);transition:width .3s}
+.tb-timer{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--warn);font-weight:600;white-space:nowrap}
+.tb-actions{display:flex;gap:8px;justify-content:space-between}
+.tb-actions .btn{flex:1;justify-content:center}
+
+/* ─── Valid move highlight legend ────────────────────── */
+.board-legend{display:flex;gap:12px;font-size:11px;color:var(--muted);align-items:center;flex-wrap:wrap;padding:4px 0}
+.legend-dot{width:12px;height:12px;border-radius:50%;background:rgba(79,156,247,.5);border:1.5px solid rgba(79,156,247,.8);display:inline-block}
+.legend-ring{width:14px;height:14px;border-radius:50%;background:rgba(232,93,74,.15);border:1.5px solid rgba(232,93,74,.6);display:inline-block}
+.legend-sel{width:14px;height:14px;border-radius:50%;background:rgba(79,156,247,.12);border:2px solid #4f9cf7;display:inline-block}
+
+/* ─── Mobile game screen ──────────────────────────────── */
+.mob-game{background:var(--bg);min-height:100vh;display:flex;flex-direction:column;max-width:375px;margin:0 auto;font-size:13px}
+.mob-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
+.mob-hdr .back-btn{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;padding:0;display:flex;align-items:center;gap:4px}
+.mob-hdr .ml-auto{margin-left:auto;display:flex;gap:6px;align-items:center}
+.mob-player-row{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
+.mob-player-name{font-weight:600;font-size:13px}
+.mob-player-elo{font-size:11px;color:var(--muted)}
+.mob-timer{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;margin-left:auto}
+.mob-turn-label{font-size:11px;font-weight:600}
+.mob-board-wrap{padding:0;background:var(--bg)}
+.mob-bottom-bar{display:flex;align-items:center;border-top:1px solid var(--border);background:var(--surface)}
+.mob-bar-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px;background:none;border:none;border-right:1px solid var(--border);cursor:pointer;font-family:inherit;color:var(--muted);font-size:10px;position:relative}
+.mob-bar-btn:last-child{border-right:none}
+.mob-bar-btn .icon{font-size:16px}
+.mob-badge{position:absolute;top:6px;right:calc(50% - 14px);background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:var(--rF);padding:1px 5px;line-height:1.2}
+
+/* Mobile overrides */
+#pframe.mob .game-body{grid-template-columns:1fr}
+#pframe.mob .side-panel,.mob .hist-panel{display:none}
+#pframe.mob .hero h1{font-size:22px}
+#pframe.mob .hero-cta{flex-direction:column;align-items:stretch}
+#pframe.mob .room-grid{grid-template-columns:1fr}
+</style>
+</head>
+<body>
+
+<!-- ───────────── SIDEBAR ───────────────────────────────── -->
+<nav id="sidebar">
+  <div class="logo">🀄 Cờ <span>Tướng</span></div>
+  <div class="ng"><div class="nl">Onboarding</div>
+    <button class="ni on" onclick="show('fv',this)">🧑 First Visit</button>
+  </div>
+  <div class="ng"><div class="nl">Lobby</div>
+    <button class="ni" onclick="show('lobby',this)">🏠 Lobby</button>
+    <button class="ni" onclick="show('lobby-modal',this)">🏠 + Tạo Phòng Modal</button>
+  </div>
+  <div class="ng"><div class="nl">Game Screen</div>
+    <button class="ni" onclick="show('g-wait',this)">⏳ Chờ Đối Thủ</button>
+    <button class="ni" onclick="show('g-my',this)">✅ Lượt Của Tôi</button>
+    <button class="ni" onclick="show('g-opp',this)">⏰ Lượt Đối Thủ</button>
+    <button class="ni" onclick="show('g-chk',this)">⚠️ Chiếu Tướng</button>
+    <button class="ni" onclick="show('g-chat',this)">💬 Chat & Spectators</button>
+    <button class="ni" onclick="show('g-takeback',this)">↩ Take-back Request</button>
+    <button class="ni" onclick="show('g-highlights',this)">🔵 Valid Move Highlights</button>
+    <button class="ni" onclick="show('g-mobile',this)">📱 Game — Mobile</button>
+  </div>
+  <div class="ng"><div class="nl">Kết Quả</div>
+    <button class="ni" onclick="show('r-win',this)">🏆 Thắng</button>
+    <button class="ni" onclick="show('r-lose',this)">😞 Thua</button>
+  </div>
+</nav>
+
+<!-- ───────────── MAIN ──────────────────────────────────── -->
+<div id="main">
+  <div id="toolbar">
+    <em>Viewport:</em>
+    <button class="vb on" id="vd" onclick="vp('d')">🖥 Desktop</button>
+    <button class="vb" id="vm" onclick="vp('m')">📱 Mobile 375px</button>
+    <span id="slabel">First Visit</span>
+  </div>
+  <div id="pout"><div id="pframe">
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- FIRST VISIT                                        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-fv" class="scr on">
+      <div class="fv-overlay">
+        <div class="fv-card">
+          <div class="fv-header">
+            <div class="icon">🀄</div>
+            <h2>Chào mừng!</h2>
+            <p>Nhập tên để bắt đầu chơi — không cần đăng ký</p>
+          </div>
+          <div class="fv-body">
+            <label>Tên của bạn</label>
+            <input class="fv-input" type="text" placeholder="Ví dụ: Rồng Đỏ (2–16 ký tự)" value="Rồng Đỏ">
+            <div class="fv-hint">Bạn có thể thay đổi tên sau trong phần cài đặt</div>
+            <div style="margin-top:16px">
+              <label>Ngôn ngữ</label>
+              <div class="lang-grid">
+                <div class="lang-option on">🇻🇳 Tiếng Việt</div>
+                <div class="lang-option">🇬🇧 English</div>
+                <div class="lang-option">🇨🇳 中文</div>
+                <div class="lang-option">🇰🇷 한국어</div>
+                <div class="lang-option">🇷🇺 Русский</div>
+                <div class="lang-option">🇫🇷 Français</div>
+                <div class="lang-option">🇩🇪 Deutsch</div>
+                <div class="lang-option">🇵🇹 Português</div>
+              </div>
+            </div>
+          </div>
+          <div class="fv-footer">
+            <button class="btn btn-p btn-lg" style="width:100%;justify-content:center">Vào chơi →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- LOBBY                                              -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-lobby" class="scr">
+      <div class="hdr">
+        <div class="logo">🀄 Cờ <span>Tướng</span> Online</div>
+        <div class="player-hdr" style="margin-left:auto">
+          <span class="badge b-tier-g">🥇 Gold</span>
+          <span class="name">Rồng Đỏ</span>
+          <span class="elo-pill">1,524 ELO</span>
+          <div class="lang-sel"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+          <button class="btn btn-g btn-sm">⚙</button>
+        </div>
+      </div>
+      <div class="hero">
+        <h1>Chơi cờ <span>tướng</span> online</h1>
+        <p>Không cần đăng ký — chia sẻ link là vào ngay</p>
+        <div class="hero-cta">
+          <button class="btn btn-p btn-lg">+ Tạo phòng mới</button>
+          <button class="btn btn-s btn-lg">🔗 Nhập link phòng</button>
+        </div>
+      </div>
+      <div class="lobby-body">
+        <div class="sec-hdr">
+          <span class="sec-title">Phòng đang chờ người chơi</span>
+          <span class="badge b-pub">4 phòng</span>
+        </div>
+        <!-- Filters -->
+        <div class="filter-row">
+          <span style="font-size:11px;color:var(--muted);line-height:26px">Lọc theo rank:</span>
+          <button class="filter-chip on">Tất cả</button>
+          <button class="filter-chip">🥉 Bronze</button>
+          <button class="filter-chip">🥈 Silver</button>
+          <button class="filter-chip">🥇 Gold</button>
+          <button class="filter-chip">💎 Platinum</button>
+          <span style="margin-left:8px;font-size:11px;color:var(--muted);line-height:26px">Thời gian:</span>
+          <button class="filter-chip on">Tất cả</button>
+          <button class="filter-chip">⚡ ≤20p</button>
+          <button class="filter-chip">⏱ 30-60p</button>
+          <button class="filter-chip">∞ Không giới hạn</button>
+        </div>
+        <div class="room-grid">
+          <div class="rc">
+            <div class="rc-top"><div class="pdot pdot-r"></div><div class="rc-name">Rồng Lửa</div><span class="badge b-pub">Công khai</span></div>
+            <div class="rc-meta"><span class="badge b-tier-g">🥇 Gold • 1,587</span><span class="timer-tag">⏱ 30 phút</span><span style="margin-left:auto;font-size:10px">2 phút trước</span></div>
+            <button class="btn btn-p" style="width:100%;justify-content:center">Vào chơi →</button>
+          </div>
+          <div class="rc">
+            <div class="rc-top"><div class="pdot pdot-r"></div><div class="rc-name">Kỳ Thủ Bắc</div><span class="badge b-pub">Công khai</span></div>
+            <div class="rc-meta"><span class="badge b-tier-p">💎 Platinum • 1,720</span><span class="timer-tag">⏱ 20 phút</span><span style="margin-left:auto;font-size:10px">30 giây trước</span></div>
+            <button class="btn btn-p" style="width:100%;justify-content:center">Vào chơi →</button>
+          </div>
+          <div class="rc">
+            <div class="rc-top"><div class="pdot pdot-r"></div><div class="rc-name">Anonymous 4872</div><span class="badge b-pub">Công khai</span></div>
+            <div class="rc-meta"><span class="badge b-tier-s">🥈 Silver • 1,320</span><span class="timer-tag">∞ Không giới hạn</span><span style="margin-left:auto;font-size:10px">5 phút trước</span></div>
+            <button class="btn btn-p" style="width:100%;justify-content:center">Vào chơi →</button>
+          </div>
+          <div class="rc">
+            <div class="rc-top"><div class="pdot pdot-r"></div><div class="rc-name">Hổ Cờ Miền Nam</div><span class="badge b-pub">Công khai</span></div>
+            <div class="rc-meta"><span class="badge b-tier-g">🥇 Gold • 1,456</span><span class="timer-tag">⏱ 10 phút</span><span style="margin-left:auto;font-size:10px">1 phút trước</span></div>
+            <button class="btn btn-p" style="width:100%;justify-content:center">Vào chơi →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- LOBBY + CREATE ROOM MODAL                          -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-lobby-modal" class="scr">
+      <div class="mo-wrap">
+        <div class="hdr" style="opacity:.25">
+          <div class="logo">🀄 Cờ <span>Tướng</span> Online</div>
+          <div class="lang-sel" style="margin-left:auto"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+        </div>
+        <div class="mo-bg">
+          <div class="mo-box">
+            <div class="mo-hdr"><span class="mo-title">Tạo phòng mới</span><button class="mo-x">×</button></div>
+            <div class="mo-body">
+              <div class="fg">
+                <label class="fl">Tên của bạn</label>
+                <input class="fi" type="text" value="Rồng Đỏ">
+              </div>
+              <div class="fg">
+                <label class="fl">Loại phòng</label>
+                <div class="rg">
+                  <label class="ro on"><input type="radio" name="rt" checked><div class="rt"><strong>🌐 Công khai</strong><span>Hiện trong danh sách phòng</span></div></label>
+                  <label class="ro"><input type="radio" name="rt"><div class="rt"><strong>🔒 Riêng tư</strong><span>Chỉ vào được qua link</span></div></label>
+                </div>
+              </div>
+              <div class="fg">
+                <label class="fl">Thời gian mỗi bên</label>
+                <div class="tc-grid">
+                  <div class="tc-opt">10 phút</div>
+                  <div class="tc-opt">20 phút</div>
+                  <div class="tc-opt on">30 phút</div>
+                  <div class="tc-opt">40 phút</div>
+                  <div class="tc-opt">50 phút</div>
+                  <div class="tc-opt">1 giờ</div>
+                  <div class="tc-opt" style="grid-column:1/-1">∞ Không giới hạn</div>
+                </div>
+              </div>
+              <!-- New toggles -->
+              <div class="fg">
+                <label class="fl">Tuỳ chọn thêm</label>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <div class="toggle-row">
+                    <div class="toggle-info">
+                      <strong>👁 Cho phép người xem</strong>
+                      <span>Người ngoài có thể theo dõi</span>
+                    </div>
+                    <label class="toggle-pill">
+                      <input type="checkbox" checked>
+                      <span class="toggle-track"></span>
+                    </label>
+                  </div>
+                  <div class="toggle-row">
+                    <div class="toggle-info">
+                      <strong>↩ Cho phép hoãn nước</strong>
+                      <span>Mỗi bên hoãn tối đa 3 lần</span>
+                    </div>
+                    <label class="toggle-pill">
+                      <input type="checkbox" checked>
+                      <span class="toggle-track"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mo-ftr">
+              <button class="btn btn-g">Huỷ</button>
+              <button class="btn btn-p">Tạo phòng →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GAME: WAITING                                      -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-g-wait" class="scr game-scr">
+      <div class="hdr">
+        <button class="btn btn-g btn-sm">← Lobby</button>
+        <div class="logo" style="margin:0 auto">🀄 Cờ <span>Tướng</span> Online</div>
+        <div class="lang-sel"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+        <button class="btn btn-s btn-sm">🔗 Chia sẻ</button>
+      </div>
+      <div class="game-body">
+        <div class="side-panel">
+          <div class="pi">
+            <div class="prow"><div class="pdot2" style="background:var(--blk)"></div><span class="pname" style="color:var(--disabled)">Chờ đối thủ...</span></div>
+            <div class="turn t-wait">⏳ Chưa vào</div>
+          </div>
+          <div class="pi active">
+            <div class="prow"><div class="pdot2" style="background:var(--red)"></div><span class="pname">Rồng Đỏ</span></div>
+            <div class="pylabel">Bạn • Đỏ • 🥇 1524</div>
+          </div>
+        </div>
+        <div class="board-area">
+          <div class="sbar sbar-w">⏳ Đang chờ đối thủ vào phòng...</div>
+          <div class="board-rel">
+            <div class="board-wrap" id="brd-wait"></div>
+            <div class="wait-ov">
+              <div class="spin"></div>
+              <p>Đang chờ đối thủ vào phòng...</p>
+              <div class="share-box">
+                <span class="share-url">cotuong.app/game/a1b2c3d4</span>
+                <button class="btn btn-s btn-sm">📋 Sao chép</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hist-panel">
+          <div class="hist-title">Lịch sử nước đi</div>
+          <div style="color:var(--disabled);font-size:12px;padding:4px 0">Ván chưa bắt đầu</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GAME: MY TURN                                      -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-g-my" class="scr game-scr">
+      <div class="hdr">
+        <button class="btn btn-g btn-sm">← Lobby</button>
+        <div class="logo" style="margin:0 auto">🀄 Cờ <span>Tướng</span> Online</div>
+        <div class="lang-sel"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+        <button class="btn btn-s btn-sm">🔗 Chia sẻ</button>
+      </div>
+      <div class="game-body">
+        <div class="side-panel">
+          <div class="pi">
+            <div class="prow"><div class="pdot2" style="background:var(--blk)"></div><span class="pname" style="color:var(--blk-l)">Mây Đen</span></div>
+            <div class="pylabel">💎 Platinum • 1,720</div>
+            <div class="timer paused">19:45</div>
+            <div class="turn t-wait">⏳ Đang chờ</div>
+          </div>
+          <div class="pi active">
+            <div class="prow"><div class="pdot2" style="background:var(--red)"></div><span class="pname">Rồng Đỏ</span></div>
+            <div class="pylabel">Bạn • Đỏ • 🥇 1524</div>
+            <div class="timer active">18:32</div>
+            <div class="turn t-mine">✅ Lượt của bạn — Xe đã chọn</div>
+          </div>
+          <hr class="divider">
+          <button class="btn btn-d" style="width:100%;justify-content:center;margin-top:2px">⚑ Đầu hàng</button>
+        </div>
+        <div class="board-area">
+          <div class="sbar sbar-my">✅ Đến lượt bạn đi — chọn ô đích</div>
+          <div class="board-wrap" id="brd-my"></div>
+        </div>
+        <div class="hist-panel">
+          <div class="hist-title">Lịch sử nước đi</div>
+          <div class="mv-list">
+            <div class="mv-row"><span class="mv-n">1.</span><span class="mv-r">Xe 1-5</span><span class="mv-b">Xe 9-5</span></div>
+            <div class="mv-row"><span class="mv-n">2.</span><span class="mv-r">Mã 2-3</span><span class="mv-b">Pháo 2-5</span></div>
+            <div class="mv-row latest"><span class="mv-n">3.</span><span class="mv-r"><b>Xe 5-?</b></span><span class="mv-b"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GAME: OPP TURN                                     -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-g-opp" class="scr game-scr">
+      <div class="hdr">
+        <button class="btn btn-g btn-sm">← Lobby</button>
+        <div class="logo" style="margin:0 auto">🀄 Cờ <span>Tướng</span> Online</div>
+        <div class="lang-sel"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+        <button class="btn btn-s btn-sm">🔗 Chia sẻ</button>
+      </div>
+      <div class="game-body">
+        <div class="side-panel">
+          <div class="pi active">
+            <div class="prow"><div class="pdot2" style="background:var(--blk)"></div><span class="pname" style="color:var(--blk-l)">Mây Đen</span></div>
+            <div class="pylabel">💎 Platinum • 1,720</div>
+            <div class="timer active" style="color:var(--blk-l)">19:12</div>
+            <div class="turn" style="color:var(--blk-l);font-size:11px;font-weight:700">✅ Đang suy nghĩ...</div>
+          </div>
+          <div class="pi">
+            <div class="prow"><div class="pdot2" style="background:var(--red)"></div><span class="pname">Rồng Đỏ</span></div>
+            <div class="pylabel">Bạn • Đỏ • 🥇 1524</div>
+            <div class="timer paused">18:32</div>
+            <div class="turn t-wait">⏳ Đang chờ</div>
+          </div>
+          <hr class="divider">
+          <button class="btn btn-d" style="width:100%;justify-content:center;margin-top:2px">⚑ Đầu hàng</button>
+        </div>
+        <div class="board-area">
+          <div class="sbar sbar-w">⏳ Đến lượt đối thủ...</div>
+          <div class="board-wrap" id="brd-opp"></div>
+        </div>
+        <div class="hist-panel">
+          <div class="hist-title">Lịch sử nước đi</div>
+          <div class="mv-list">
+            <div class="mv-row"><span class="mv-n">1.</span><span class="mv-r">Xe 1-5</span><span class="mv-b">Xe 9-5</span></div>
+            <div class="mv-row latest"><span class="mv-n">2.</span><span class="mv-r">Mã 2-3</span><span class="mv-b"><b>Pháo 2-5</b></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GAME: CHECK                                        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-g-chk" class="scr game-scr">
+      <div class="hdr">
+        <button class="btn btn-g btn-sm">← Lobby</button>
+        <div class="logo" style="margin:0 auto">🀄 Cờ <span>Tướng</span> Online</div>
+        <div class="lang-sel"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+        <button class="btn btn-s btn-sm">🔗 Chia sẻ</button>
+      </div>
+      <div class="game-body">
+        <div class="side-panel">
+          <div class="pi">
+            <div class="prow"><div class="pdot2" style="background:var(--blk)"></div><span class="pname" style="color:var(--blk-l)">Mây Đen</span></div>
+            <div class="pylabel">💎 Platinum • 1,720</div>
+            <div class="timer paused">17:30</div>
+            <div class="turn t-wait">⏳ Đang chờ</div>
+          </div>
+          <div class="pi check">
+            <div class="prow"><div class="pdot2" style="background:var(--red)"></div><span class="pname">Rồng Đỏ</span></div>
+            <div class="pylabel">Bạn • Đỏ • 🥇 1524</div>
+            <div class="timer low">15:08</div>
+            <div class="turn t-check">⚠️ Tướng bị chiếu!</div>
+          </div>
+          <hr class="divider">
+          <button class="btn btn-d" style="width:100%;justify-content:center;margin-top:2px">⚑ Đầu hàng</button>
+        </div>
+        <div class="board-area">
+          <div class="sbar sbar-chk">⚠️ Tướng đỏ đang bị chiếu — phải di chuyển để thoát!</div>
+          <div class="board-wrap" id="brd-chk"></div>
+        </div>
+        <div class="hist-panel">
+          <div class="hist-title">Lịch sử nước đi</div>
+          <div class="mv-list">
+            <div class="mv-row"><span class="mv-n">1.</span><span class="mv-r">Xe 1-5</span><span class="mv-b">Xe 9-5</span></div>
+            <div class="mv-row"><span class="mv-n">2.</span><span class="mv-r">Mã 2-3</span><span class="mv-b">Pháo 2-5</span></div>
+            <div class="mv-row latest"><span class="mv-n">3.</span><span class="mv-r">Xe 5-1</span><span class="mv-b"><b>Xe 5-5✚</b></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GAME: CHAT & SPECTATORS                            -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-g-chat" class="scr game-scr">
+      <div class="hdr">
+        <button class="btn btn-g btn-sm">← Lobby</button>
+        <div class="logo" style="margin:0 auto">🀄 Cờ <span>Tướng</span> Online</div>
+        <div class="lang-sel"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+        <button class="btn btn-s btn-sm">🔗 Chia sẻ</button>
+      </div>
+      <div class="game-body" style="grid-template-columns:190px 1fr 260px">
+        <!-- Left panel -->
+        <div class="side-panel">
+          <div class="pi">
+            <div class="prow"><div class="pdot2" style="background:var(--blk)"></div><span class="pname" style="color:var(--blk-l)">Mây Đen</span></div>
+            <div class="pylabel">🥈 Silver • 1,285</div>
+            <div class="timer paused">18:42</div>
+            <div class="turn t-wait">⏳ Đang chờ</div>
+          </div>
+          <div class="pi active">
+            <div class="prow"><div class="pdot2" style="background:var(--red)"></div><span class="pname">Rồng Đỏ</span></div>
+            <div class="pylabel">Bạn • Đỏ • 🥇 1,542</div>
+            <div class="timer active">19:03</div>
+            <div class="turn t-mine">✅ Lượt của bạn</div>
+          </div>
+          <hr class="divider">
+          <!-- Spectator list -->
+          <div class="spec-section" style="padding:0">
+            <div class="spec-title">👁 3 người đang xem</div>
+            <div class="spec-item"><span>👤</span> Viewer1</div>
+            <div class="spec-item"><span>👤</span> Viewer2</div>
+            <div class="spec-item"><span>👤</span> Viewer3</div>
+          </div>
+          <hr class="divider">
+          <button class="btn btn-s" style="width:100%;justify-content:center;font-size:12px">↩ Xin hoãn (2/3)</button>
+          <button class="btn btn-d" style="width:100%;justify-content:center;margin-top:2px">⚑ Đầu hàng</button>
+        </div>
+        <!-- Board center -->
+        <div class="board-area">
+          <div class="sbar sbar-my">✅ Đến lượt bạn đi</div>
+          <div class="board-wrap" id="brd-chat"></div>
+        </div>
+        <!-- Right panel: tabs + chat -->
+        <div class="right-panel">
+          <div class="tabs-row">
+            <button class="tab-btn">📜 Nước đi</button>
+            <button class="tab-btn on">💬 Chat</button>
+          </div>
+          <div class="chat-body">
+            <!-- Player bubble right -->
+            <div class="chat-msg right">
+              <div class="chat-author">Rồng Đỏ</div>
+              <div class="chat-bubble red-bubble">Nước đi hay đó!</div>
+            </div>
+            <!-- Spectator bubble left -->
+            <div class="chat-msg left">
+              <div class="chat-author">👁 Viewer1</div>
+              <div class="chat-bubble gray-bubble">Ván hay quá!</div>
+            </div>
+            <!-- Opponent bubble left -->
+            <div class="chat-msg left">
+              <div class="chat-author">Mây Đen</div>
+              <div class="chat-bubble gray-bubble">Cảm ơn :)</div>
+            </div>
+            <!-- Another spectator -->
+            <div class="chat-msg left">
+              <div class="chat-author">👁 Viewer2</div>
+              <div class="chat-bubble gray-bubble">Chơi đẹp lắm!</div>
+            </div>
+            <!-- Player reply -->
+            <div class="chat-msg right">
+              <div class="chat-author">Rồng Đỏ</div>
+              <div class="chat-bubble red-bubble">🙏</div>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <input class="chat-input" type="text" placeholder="Nhắn tin...">
+            <button class="chat-send">→</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GAME: TAKE-BACK REQUEST                            -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-g-takeback" class="scr game-scr">
+      <div class="hdr">
+        <button class="btn btn-g btn-sm">← Lobby</button>
+        <div class="logo" style="margin:0 auto">🀄 Cờ <span>Tướng</span> Online</div>
+        <div class="lang-sel"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+        <button class="btn btn-s btn-sm">🔗 Chia sẻ</button>
+      </div>
+      <div class="game-body">
+        <div class="side-panel">
+          <div class="pi">
+            <div class="prow"><div class="pdot2" style="background:var(--blk)"></div><span class="pname" style="color:var(--blk-l)">Mây Đen</span></div>
+            <div class="pylabel">🥈 Silver • 1,285</div>
+            <div class="timer paused">18:42</div>
+            <div class="turn t-wait">⏳ Đang chờ</div>
+          </div>
+          <div class="pi active">
+            <div class="prow"><div class="pdot2" style="background:var(--red)"></div><span class="pname">Rồng Đỏ</span></div>
+            <div class="pylabel">Bạn • Đỏ • 🥇 1,542</div>
+            <div class="timer active">19:03</div>
+            <div class="turn t-mine">✅ Lượt của bạn</div>
+          </div>
+          <hr class="divider">
+          <button class="btn btn-s" style="width:100%;justify-content:center;font-size:12px;opacity:.45;cursor:not-allowed">↩ Xin hoãn (2/3)</button>
+          <button class="btn btn-d" style="width:100%;justify-content:center;margin-top:2px">⚑ Đầu hàng</button>
+        </div>
+        <div class="board-area">
+          <!-- Take-back banner overlaid at top of board column -->
+          <div class="takeback-banner">
+            <div class="tb-title">↩ Rồng Đỏ xin hoãn nước vừa đi</div>
+            <div class="tb-progress-wrap">
+              <div class="tb-bar-bg"><div class="tb-bar-fill"></div></div>
+              <span class="tb-timer">21s</span>
+            </div>
+            <div class="tb-actions">
+              <button class="btn btn-d">Từ chối</button>
+              <button class="btn btn-p">Đồng ý</button>
+            </div>
+          </div>
+          <div class="sbar sbar-w" style="opacity:.5">⏳ Đang chờ phản hồi...</div>
+          <div class="board-wrap" id="brd-takeback"></div>
+        </div>
+        <div class="hist-panel">
+          <div class="hist-title">Lịch sử nước đi</div>
+          <div class="mv-list">
+            <div class="mv-row"><span class="mv-n">1.</span><span class="mv-r">Xe 1-5</span><span class="mv-b">Xe 9-5</span></div>
+            <div class="mv-row"><span class="mv-n">2.</span><span class="mv-r">Mã 2-3</span><span class="mv-b">Pháo 2-5</span></div>
+            <div class="mv-row latest"><span class="mv-n">3.</span><span class="mv-r" style="opacity:.45;text-decoration:line-through">Xe 5-?</span><span class="mv-b"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GAME: VALID MOVE HIGHLIGHTS                        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-g-highlights" class="scr game-scr">
+      <div class="hdr">
+        <button class="btn btn-g btn-sm">← Lobby</button>
+        <div class="logo" style="margin:0 auto">🀄 Cờ <span>Tướng</span> Online</div>
+        <div class="lang-sel"><button class="lang-sel-btn">🇻🇳 VI ▾</button></div>
+        <button class="btn btn-s btn-sm">🔗 Chia sẻ</button>
+      </div>
+      <div class="game-body">
+        <div class="side-panel">
+          <div class="pi">
+            <div class="prow"><div class="pdot2" style="background:var(--blk)"></div><span class="pname" style="color:var(--blk-l)">Mây Đen</span></div>
+            <div class="pylabel">💎 Platinum • 1,720</div>
+            <div class="timer paused">19:45</div>
+            <div class="turn t-wait">⏳ Đang chờ</div>
+          </div>
+          <div class="pi active">
+            <div class="prow"><div class="pdot2" style="background:var(--red)"></div><span class="pname">Rồng Đỏ</span></div>
+            <div class="pylabel">Bạn • Đỏ • 🥇 1524</div>
+            <div class="timer active">18:32</div>
+            <div class="turn t-mine">✅ Xe đã chọn — chọn ô đích</div>
+          </div>
+          <hr class="divider">
+          <button class="btn btn-d" style="width:100%;justify-content:center;margin-top:2px">⚑ Đầu hàng</button>
+        </div>
+        <div class="board-area">
+          <div class="sbar sbar-my">✅ Xe (cột A) đã chọn — ô xanh = hợp lệ, vòng đỏ = ăn quân</div>
+          <div class="board-wrap" id="brd-highlights"></div>
+          <!-- Legend -->
+          <div class="board-legend">
+            <span class="legend-sel"></span><span>Quân đang chọn</span>
+            <span class="legend-dot"></span><span>Ô hợp lệ</span>
+            <span class="legend-ring"></span><span>Có thể ăn quân</span>
+          </div>
+        </div>
+        <div class="hist-panel">
+          <div class="hist-title">Lịch sử nước đi</div>
+          <div class="mv-list">
+            <div class="mv-row"><span class="mv-n">1.</span><span class="mv-r">Xe 1-5</span><span class="mv-b">Xe 9-5</span></div>
+            <div class="mv-row latest"><span class="mv-n">2.</span><span class="mv-r">Mã 2-3</span><span class="mv-b"><b>Pháo 2-5</b></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GAME: MOBILE                                       -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-g-mobile" class="scr">
+      <div style="background:var(--bg);min-height:100vh;display:flex;justify-content:center;padding:20px 0">
+        <div class="mob-game" style="border:1px solid var(--border);border-radius:var(--r12);overflow:hidden;box-shadow:var(--sh-modal)">
+          <!-- Mobile header -->
+          <div class="mob-hdr">
+            <button class="mob-hdr back-btn">← Về lobby</button>
+            <div class="ml-auto">
+              <button class="btn btn-s btn-sm" style="padding:3px 8px;font-size:11px">🔗</button>
+              <div class="lang-sel"><button class="lang-sel-btn" style="font-size:11px;padding:3px 8px">🇻🇳 VI ▾</button></div>
+            </div>
+          </div>
+          <!-- Opponent panel (top) -->
+          <div class="mob-player-row" style="border-top:1px solid var(--border)">
+            <div class="pdot2" style="background:var(--blk);width:9px;height:9px;border-radius:50%;flex-shrink:0"></div>
+            <span class="mob-player-name" style="color:var(--blk-l)">Mây Đen</span>
+            <span class="mob-player-elo">🥈 1,285</span>
+            <span class="mob-timer" style="color:var(--disabled)">18:42</span>
+          </div>
+          <div style="padding:4px 14px;background:var(--surface);border-bottom:1px solid var(--border)">
+            <span style="font-size:11px;color:var(--muted)">⏳ Đang đi...</span>
+          </div>
+          <!-- Board full width -->
+          <div class="mob-board-wrap">
+            <div id="brd-mobile" style="width:100%"></div>
+          </div>
+          <!-- My panel (bottom player) -->
+          <div class="mob-player-row" style="border-top:1px solid var(--border);background:rgba(79,156,247,.05)">
+            <div class="pdot2" style="background:var(--red);width:9px;height:9px;border-radius:50%;flex-shrink:0"></div>
+            <span class="mob-player-name">Rồng Đỏ</span>
+            <span class="mob-player-elo">🥇 1,542</span>
+            <span class="mob-timer" style="color:var(--text)">19:03</span>
+          </div>
+          <div style="padding:4px 14px;background:rgba(79,156,247,.05);border-bottom:1px solid var(--border)">
+            <span style="font-size:11px;color:var(--acc);font-weight:600">✅ Lượt của bạn</span>
+          </div>
+          <!-- Bottom action bar -->
+          <div class="mob-bottom-bar">
+            <button class="mob-bar-btn">
+              <span class="icon">📜</span>
+              <span>4 nước</span>
+            </button>
+            <button class="mob-bar-btn" style="position:relative">
+              <span class="icon">💬</span>
+              <span class="mob-badge">3</span>
+              <span>Chat</span>
+            </button>
+            <button class="mob-bar-btn">
+              <span class="icon">👁</span>
+              <span>3 xem</span>
+            </button>
+            <button class="mob-bar-btn" style="border-right:none">
+              <span class="icon">⋯</span>
+              <span>Thêm</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- RESULT: WIN                                        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-r-win" class="scr">
+      <div class="res-back">
+        <div class="res-card res-win">
+          <div class="cbox" id="cbox"></div>
+          <div class="res-hdr">
+            <div class="res-icon">🏆</div>
+            <div class="res-title">Bạn Thắng!</div>
+            <div class="res-reason">Chiếu bí sau 28 nước đi</div>
+            <div style="margin-top:8px"><span class="badge b-ok">+18 ELO → 1,542</span></div>
+          </div>
+          <div class="res-stats">
+            <div class="stats-row">
+              <div class="sp"><div class="sp-name r">🔴 Rồng Đỏ</div><div class="sp-info">15 nước</div><div class="sp-result win">Thắng</div></div>
+              <div class="st-vs">↔</div>
+              <div class="sp"><div class="sp-name b">⚫ Mây Đen</div><div class="sp-info">13 nước</div><div class="sp-result lose">Thua</div></div>
+            </div>
+            <div class="st-dur">⏱ 14 phút 32 giây &nbsp;|&nbsp; 30 phút/bên</div>
+          </div>
+          <div class="res-acts">
+            <button class="btn btn-p">🔄 Chơi lại</button>
+            <button class="btn btn-s">🏠 Về lobby</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- RESULT: LOSE                                       -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="scr-r-lose" class="scr">
+      <div class="res-back">
+        <div class="res-card res-lose">
+          <div class="res-hdr">
+            <div class="res-icon">😞</div>
+            <div class="res-title">Bạn Thua</div>
+            <div class="res-reason">Đối thủ chiếu bí sau 28 nước đi</div>
+            <div style="margin-top:8px"><span class="badge" style="background:rgba(232,93,74,.12);color:var(--red)">-16 ELO → 1,508</span></div>
+          </div>
+          <div class="res-stats">
+            <div class="stats-row">
+              <div class="sp"><div class="sp-name r">🔴 Rồng Đỏ</div><div class="sp-info">13 nước</div><div class="sp-result lose">Thua</div></div>
+              <div class="st-vs">↔</div>
+              <div class="sp"><div class="sp-name b">⚫ Mây Đen</div><div class="sp-info">15 nước</div><div class="sp-result win">Thắng</div></div>
+            </div>
+            <div class="st-dur">⏱ 14 phút 32 giây &nbsp;|&nbsp; 30 phút/bên</div>
+          </div>
+          <div class="res-acts">
+            <button class="btn btn-p">🔄 Chơi lại</button>
+            <button class="btn btn-s">🏠 Về lobby</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div></div><!-- /pframe /pout -->
+</div><!-- /main -->
+
+<script>
+// ── Piece character map ────────────────────────────────────
+const PC = {
+  'r-ju':'車','r-ma':'馬','r-xiang':'相','r-shi':'仕','r-jiang':'帥','r-pao':'炮','r-zu':'兵',
+  'b-ju':'車','b-ma':'馬','b-xiang':'象','b-shi':'士','b-jiang':'將','b-pao':'砲','b-zu':'卒',
+};
+
+// ── Initial board (row 0 = black side top, row 9 = red side bottom) ──
+const IB = [
+  ['b-ju','b-ma','b-xiang','b-shi','b-jiang','b-shi','b-xiang','b-ma','b-ju'],
+  [null,null,null,null,null,null,null,null,null],
+  [null,'b-pao',null,null,null,null,null,'b-pao',null],
+  ['b-zu',null,'b-zu',null,'b-zu',null,'b-zu',null,'b-zu'],
+  [null,null,null,null,null,null,null,null,null],
+  [null,null,null,null,null,null,null,null,null],
+  ['r-zu',null,'r-zu',null,'r-zu',null,'r-zu',null,'r-zu'],
+  [null,'r-pao',null,null,null,null,null,'r-pao',null],
+  [null,null,null,null,null,null,null,null,null],
+  ['r-ju','r-ma','r-xiang','r-shi','r-jiang','r-shi','r-xiang','r-ma','r-ju'],
+];
+
+// ── Mid-game board (some pieces moved for a richer mid-game state) ──
+const MB = [
+  ['b-ju','b-ma','b-xiang','b-shi','b-jiang','b-shi','b-xiang','b-ma','b-ju'],
+  [null,null,null,null,null,null,null,null,null],
+  [null,'b-pao',null,null,null,null,null,'b-pao',null],
+  ['b-zu',null,'b-zu',null,'b-zu',null,'b-zu',null,'b-zu'],
+  [null,null,null,null,null,null,null,null,null],
+  [null,null,null,'b-zu',null,null,null,null,null],
+  [null,null,'r-zu',null,'r-zu',null,'r-zu',null,'r-zu'],
+  [null,'r-pao',null,null,null,null,null,'r-pao',null],
+  [null,null,null,null,null,null,null,null,null],
+  ['r-ju','r-ma','r-xiang','r-shi','r-jiang','r-shi','r-xiang','r-ma','r-ju'],
+];
+
+// ── Build Xiangqi board SVG ────────────────────────────────
+// Pieces sit on LINE INTERSECTIONS, not squares.
+// Inner vertical lines (cols 1-7) are split at the river.
+// Palace diagonals in cung areas. Position markers at cannon/pawn starts.
+let _gid = 0;
+function makeBoard(pieces, opts={}) {
+  const C=52, P=30;
+  const W=P*2+8*C, H=P*2+9*C;
+  const ix=c=>P+c*C, iy=r=>P+r*C;
+  const gid = 'g'+(++_gid);
+  const ls=[];
+
+  // Defs: piece gradients
+  ls.push(`<defs>
+    <radialGradient id="${gid}r" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ff6e5a"/><stop offset="100%" stop-color="#b52d20"/>
+    </radialGradient>
+    <radialGradient id="${gid}b" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#3d546e"/><stop offset="100%" stop-color="#182436"/>
+    </radialGradient>
+  </defs>`);
+
+  // Board background
+  ls.push(`<rect width="${W}" height="${H}" fill="#c8a96e" rx="6"/>`);
+
+  // Outer border rectangle
+  ls.push(`<rect x="${P}" y="${P}" width="${8*C}" height="${9*C}" fill="none" stroke="#8b6914" stroke-width="2"/>`);
+
+  // Horizontal lines rows 1-8
+  for(let r=1;r<=8;r++) {
+    ls.push(`<line x1="${P}" y1="${iy(r)}" x2="${P+8*C}" y2="${iy(r)}" stroke="#8b6914" stroke-width="1"/>`);
+  }
+
+  // Vertical lines cols 1-7 — SPLIT AT RIVER (stop at rows 4 & 5, not crossing river gap)
+  for(let c=1;c<=7;c++) {
+    ls.push(`<line x1="${ix(c)}" y1="${P}" x2="${ix(c)}" y2="${iy(4)}" stroke="#8b6914" stroke-width="1"/>`);
+    ls.push(`<line x1="${ix(c)}" y1="${iy(5)}" x2="${ix(c)}" y2="${P+9*C}" stroke="#8b6914" stroke-width="1"/>`);
+  }
+
+  // River labels (楚河 left, 漢界 right — centered in river gap)
+  const ry=(iy(4)+iy(5))/2+5;
+  ls.push(`<text x="${P+C}" y="${ry}" font-family="'Noto Serif SC',serif" font-size="13" fill="rgba(100,70,10,.55)" text-anchor="middle">楚河</text>`);
+  ls.push(`<text x="${P+7*C}" y="${ry}" font-family="'Noto Serif SC',serif" font-size="13" fill="rgba(100,70,10,.55)" text-anchor="middle">漢界</text>`);
+
+  // Palace diagonals
+  // Black palace: rows 0-2, cols 3-5 — X crossing (3,0)-(5,2) and (5,0)-(3,2)
+  ls.push(`<line x1="${ix(3)}" y1="${iy(0)}" x2="${ix(5)}" y2="${iy(2)}" stroke="#8b6914" stroke-width="1"/>`);
+  ls.push(`<line x1="${ix(5)}" y1="${iy(0)}" x2="${ix(3)}" y2="${iy(2)}" stroke="#8b6914" stroke-width="1"/>`);
+  // Red palace: rows 7-9, cols 3-5
+  ls.push(`<line x1="${ix(3)}" y1="${iy(7)}" x2="${ix(5)}" y2="${iy(9)}" stroke="#8b6914" stroke-width="1"/>`);
+  ls.push(`<line x1="${ix(5)}" y1="${iy(7)}" x2="${ix(3)}" y2="${iy(9)}" stroke="#8b6914" stroke-width="1"/>`);
+
+  // Position markers — cross-hair style at cannon and pawn starting intersections
+  // Cannon starts: (row2,col1),(row2,col7),(row7,col1),(row7,col7)
+  // Pawn starts: row3 cols 0,2,4,6,8 and row6 cols 0,2,4,6,8
+  const marks=[[2,1],[2,7],[7,1],[7,7],[3,0],[3,2],[3,4],[3,6],[3,8],[6,0],[6,2],[6,4],[6,6],[6,8]];
+  for(const[r,c] of marks) {
+    const mx=ix(c), my=iy(r), s=5, g=3;
+    // 4-direction cross with gap in center
+    ls.push(`<g stroke="#8b6914" stroke-width="1.2" stroke-linecap="round">
+      <line x1="${mx-s-g}" y1="${my}" x2="${mx-g}" y2="${my}"/>
+      <line x1="${mx+g}" y1="${my}" x2="${mx+s+g}" y2="${my}"/>
+      <line x1="${mx}" y1="${my-s-g}" x2="${mx}" y2="${my-g}"/>
+      <line x1="${mx}" y1="${my+g}" x2="${mx}" y2="${my+s+g}"/>
+    </g>`);
+  }
+
+  // Last move highlights (under pieces)
+  if(opts.lastFrom){const[r,c]=opts.lastFrom;ls.push(`<circle cx="${ix(c)}" cy="${iy(r)}" r="24" fill="rgba(255,210,100,.28)"/>`)}
+  if(opts.lastTo){const[r,c]=opts.lastTo;ls.push(`<circle cx="${ix(c)}" cy="${iy(r)}" r="24" fill="rgba(255,210,100,.28)"/>`)}
+
+  // Check king glow (under piece)
+  if(opts.checkCell){const[r,c]=opts.checkCell;ls.push(`<circle cx="${ix(c)}" cy="${iy(r)}" r="26" fill="rgba(232,93,74,.38)"><animate attributeName="r" values="24;28;24" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values=".38;.6;.38" dur="1.6s" repeatCount="indefinite"/></circle>`)}
+
+  // Valid move dots (empty cells) and capture rings (occupied)
+  if(opts.validMoves) {
+    for(const[vr,vc] of opts.validMoves) {
+      const hasPiece=pieces[vr]&&pieces[vr][vc];
+      if(!hasPiece) {
+        ls.push(`<circle cx="${ix(vc)}" cy="${iy(vr)}" r="8" fill="rgba(79,156,247,.42)" stroke="rgba(79,156,247,.65)" stroke-width="1.5"/>`);
+      } else {
+        ls.push(`<circle cx="${ix(vc)}" cy="${iy(vr)}" r="23" fill="rgba(232,93,74,.22)" stroke="rgba(232,93,74,.5)" stroke-width="1.5"/>`);
+      }
+    }
+  }
+
+  // Pieces — centered on intersection coordinates
+  for(let r=0;r<10;r++) for(let c=0;c<9;c++) {
+    const code=pieces[r]&&pieces[r][c]; if(!code) continue;
+    const cx=ix(c), cy=iy(r);
+    const isRed=code.startsWith('r');
+    const char=PC[code]||'?';
+    const sel=opts.selectedCell&&opts.selectedCell[0]===r&&opts.selectedCell[1]===c;
+    const fill=`url(#${gid}${isRed?'r':'b'})`;
+    const stroke=isRed?'#7a1208':'#091525';
+    const tc=isRed?'#fff5e4':'#c8d5e8';
+
+    ls.push(`<circle cx="${cx}" cy="${cy}" r="20" fill="${fill}" stroke="${stroke}" stroke-width="${sel?'0':'2'}"/>`);
+    ls.push(`<circle cx="${cx}" cy="${cy}" r="17" fill="none" stroke="${isRed?'rgba(255,180,160,.35)':'rgba(160,190,220,.3)'}" stroke-width="1.2"/>`);
+    if(sel) ls.push(`<circle cx="${cx}" cy="${cy}" r="22" fill="none" stroke="#4f9cf7" stroke-width="2.5"/>`);
+    ls.push(`<text x="${cx}" y="${cy}" font-family="'Noto Serif SC',serif" font-size="15" font-weight="700" fill="${tc}" text-anchor="middle" dominant-baseline="central">${char}</text>`);
+  }
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;max-width:${W}px;height:auto" xmlns="http://www.w3.org/2000/svg">${ls.join('')}</svg>`;
+}
+
+// ── Render all boards ──────────────────────────────────────
+document.getElementById('brd-wait').innerHTML = makeBoard(IB);
+
+document.getElementById('brd-my').innerHTML = makeBoard(IB, {
+  selectedCell: [9,0],  // Red 車 at (9,0) selected
+  validMoves: [[8,0],[7,0],[6,0],[5,0],[4,0],[3,0]],
+  lastFrom: [7,1], lastTo: [5,1],
+});
+
+document.getElementById('brd-opp').innerHTML = makeBoard(IB, {
+  lastFrom: [2,1], lastTo: [5,1],
+});
+
+document.getElementById('brd-chk').innerHTML = makeBoard(IB, {
+  checkCell: [9,4],
+  lastFrom: [0,4], lastTo: [5,4],
+});
+
+document.getElementById('brd-chat').innerHTML = makeBoard(IB, {
+  lastFrom: [7,1], lastTo: [5,1],
+});
+
+document.getElementById('brd-takeback').innerHTML = makeBoard(IB, {
+  lastFrom: [9,0], lastTo: [7,0],
+});
+
+// Valid move highlights: Xe at row 9 col 0 selected, valid moves along col 0
+// Also highlight a capturable black piece at row 3, col 0 with a capture ring
+document.getElementById('brd-highlights').innerHTML = makeBoard(IB, {
+  selectedCell: [9,0],  // Red 車 at bottom-left selected (blue glow)
+  validMoves: [
+    [8,0],[7,0],[6,0],[5,0],[4,0],  // Empty cells going up col 0
+    [3,0],  // Black pawn at (3,0) — capturable, gets red ring
+  ],
+  lastFrom: [7,1], lastTo: [5,1],
+});
+
+document.getElementById('brd-mobile').innerHTML = makeBoard(IB, {
+  lastFrom: [7,1], lastTo: [5,1],
+});
+
+// ── Screen switching ───────────────────────────────────────
+function show(name, btn) {
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('on'));
+  const el=document.getElementById('scr-'+name);
+  if(el) el.classList.add('on');
+  if(btn) btn.classList.add('on');
+  document.getElementById('slabel').textContent=btn?btn.textContent.trim():name;
+  if(name==='r-win') confetti();
+}
+
+// ── Viewport ───────────────────────────────────────────────
+function vp(v) {
+  const f=document.getElementById('pframe');
+  f.classList.toggle('mob', v==='m');
+  document.getElementById('vd').classList.toggle('on', v==='d');
+  document.getElementById('vm').classList.toggle('on', v==='m');
+}
+
+// ── Confetti ───────────────────────────────────────────────
+function confetti() {
+  const box=document.getElementById('cbox');
+  if(!box) return; box.innerHTML='';
+  const cols=['#fbbf24','#4f9cf7','#e85d4a','#4caf70','#f5a623','#a78bfa'];
+  for(let i=0;i<36;i++){
+    const p=document.createElement('div'); p.className='cp';
+    p.style.left=Math.random()*100+'%';
+    p.style.background=cols[i%cols.length];
+    p.style.animationDelay=Math.random()*1.8+'s';
+    const sz=5+Math.random()*7; p.style.width=sz+'px'; p.style.height=sz+'px';
+    box.appendChild(p);
+  }
+}
+</script>
+</body>
+</html>
