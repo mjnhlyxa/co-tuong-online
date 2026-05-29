@@ -2,16 +2,10 @@
   "name": "co-tuong-online",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "apps/web"
-  ],
   "scripts": {
     "dev": "cd apps/web && bun dev",
     "dev:api": "cd apps/api && bun dev",
     "build": "cd apps/web && bun run build",
     "start": "cd apps/web && bun run start"
-  },
-  "devDependencies": {
-    "bun-types": "^1.0.0"
   }
 }
