@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { getGame, makeMove, getRoom, joinRoom, getPlayerId, resignGame, requestRematch, showToast } from '@/lib/api';
+import { getGame, makeMove, getRoom, joinRoom, getPlayerId, resignGame, requestRematch } from '@/lib/api';
 import { GameState, Position, BOARD_ROWS, BOARD_COLS } from '@/lib/types';
-import { GameBoard, PlayerPanel, RulesModal, GameEndModal, ToastContainer, Modal } from '@/components';
+import { GameBoard, PlayerPanel, RulesModal, GameEndModal, ToastContainer, Modal, showToast } from '@/components';
 import clsx from 'clsx';
 
 // Initial board setup

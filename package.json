@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "cd apps/web && bun dev",
     "dev:api": "cd apps/api && bun dev",
-    "build": "cd apps/web && bun run build",
+    "build": "cd apps/web && npm run build",
     "start": "cd apps/web && bun run start"
   }
 }

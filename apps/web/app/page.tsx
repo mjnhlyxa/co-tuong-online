@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { createRoom, getRooms, joinRoom, getPlayerId, showToast } from '@/lib/api';
+import { createRoom, getRooms, joinRoom, getPlayerId } from '@/lib/api';
 import { Room } from '@/lib/types';
-import { RoomCard, CreateRoomModal, RulesModal, ToastContainer } from '@/components';
+import { RoomCard, CreateRoomModal, RulesModal, ToastContainer, showToast } from '@/components';
 
 export default function HomePage() {
   const router = useRouter();
