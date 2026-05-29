@@ -1,0 +1,16 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "uvicorn main:app --reload --port 8000",
+    "start": "uvicorn main:app --port 8000"
+  },
+  "dependencies": {
+    "fastapi": "^0.109.0",
+    "uvicorn": "^0.27.0",
+    "pymongo": "^4.6.0",
+    "python-multipart": "^0.0.9",
+    "websockets": "^12.0"
+  }
+}

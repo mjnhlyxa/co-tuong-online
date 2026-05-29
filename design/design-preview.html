@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cờ Tướng Online — Design Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #12121a;
+      --bg-surface: #1a1d27;
+      --bg-elevated: #232638;
+      --board-light: #d4b896;
+      --board-dark: #c4a876;
+      --board-river: #3d7a9e;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --accent: #f97316;
+      --success: #22c55e;
+      --warning: #eab308;
+      --danger: #ef4444;
+      --piece-red-bg: #dc2626;
+      --piece-black-bg: #1f2937;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --highlight-selected: rgba(251, 191, 36, 0.5);
+      --highlight-valid: rgba(34, 197, 94, 0.7);
+      --highlight-check: rgba(239, 68, 68, 0.6);
+      --highlight-last-move: rgba(251, 191, 36, 0.3);
+      --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4);
+      --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.5);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-full: 9999px;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    nav#sidebar {
+      width: 220px;
+      background: var(--bg-surface);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    nav#sidebar h2 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      padding: var(--space-4) var(--space-4) var(--space-2);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    nav#sidebar ul {
+      list-style: none;
+    }
+
+    nav#sidebar li {
+      padding: 0;
+    }
+
+    nav#sidebar button {
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      padding: var(--space-2) var(--space-4);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.875rem;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    nav#sidebar button:hover {
+      background: rgba(255,255,255,0.04);
+      color: var(--text-primary);
+    }
+
+    nav#sidebar button.active {
+      background: rgba(37, 99, 235, 0.15);
+      color: var(--primary);
+      border-left: 2px solid var(--primary);
+    }
+
+    nav#sidebar button.section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      cursor: default;
+      padding-top: var(--space-4);
+    }
+
+    nav#sidebar button.section-title:hover { background: none; }
+
+    #preview {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #viewport-toggle {
+      padding: var(--space-2) var(--space-4);
+      background: var(--bg-surface);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      gap: var(--space-2);
+      align-items: center;
+    }
+
+    #viewport-toggle span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    #viewport-toggle button {
+      background: none;
+      border: 1px solid var(--text-muted);
+      color: var(--text-secondary);
+      padding: 4px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.75rem;
+      transition: all 0.15s;
+    }
+
+    #viewport-toggle button:hover { border-color: var(--primary); color: var(--primary); }
+    #viewport-toggle button.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    #screen-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-6);
+      display: flex;
+      justify-content: center;
+    }
+
+    #screen-wrapper {
+      width: 100%;
+      max-width: 960px;
+      transition: max-width 0.3s;
+    }
+
+    div[data-screen] { display: none; }
+    div[data-screen].active { display: block; }
+
+    /* ===== SHARED UI ===== */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: var(--radius-md); cursor: pointer;
+      font-family: inherit; font-weight: 600; transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-accent { background: var(--accent); color: white; }
+    .btn-accent:hover { background: #ea580c; }
+    .btn-secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--text-muted); }
+    .btn-secondary:hover { border-color: var(--text-primary); color: var(--text-primary); }
+    .btn-ghost { background: transparent; color: var(--text-secondary); }
+    .btn-ghost:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-sm { height: 32px; padding: 0 16px; font-size: 14px; }
+    .btn-md { height: 40px; padding: 0 20px; font-size: 16px; }
+    .btn-lg { height: 48px; padding: 0 28px; font-size: 18px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-loading { position: relative; color: transparent !important; }
+    .btn-loading::after {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .input {
+      height: 40px; padding: 0 12px; border-radius: var(--radius-md);
+      background: var(--bg-surface); border: 1px solid var(--text-muted);
+      color: var(--text-primary); font-family: inherit; font-size: 16px;
+      outline: none; transition: border-color 0.15s;
+    }
+    .input:focus { border-color: var(--primary); }
+    .input.error { border-color: var(--danger); }
+    .input.mono { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; }
+
+    .card {
+      background: var(--bg-surface); border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card); padding: var(--space-4);
+    }
+    .card-hoverable { transition: transform 0.15s, box-shadow 0.15s; cursor: pointer; }
+    .card-hoverable:hover { transform: translateY(-2px); box-shadow: var(--shadow-elevated); }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; border-radius: var(--radius-full); font-size: 12px; font-weight: 500;
+    }
+    .badge-success { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+    .badge-warning { background: rgba(234, 179, 8, 0.15); color: var(--warning); }
+    .badge-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .badge-info { background: rgba(37, 99, 235, 0.15); color: var(--primary); }
+    .badge-neutral { background: rgba(100, 116, 139, 0.15); color: var(--text-secondary); }
+
+    .spinner {
+      width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.15);
+      border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+
+    /* ===== LOBBY ===== */
+    .lobby-header { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) var(--space-6); background: var(--bg-surface); border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .logo { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .logo-icon { width: 32px; height: 32px; background: var(--piece-red-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .lobby-body { padding: var(--space-6); max-width: 640px; margin: 0 auto; }
+    .lobby-top { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6); }
+    .action-card { display: flex; flex-direction: column; gap: var(--space-3); }
+    .action-card h3 { font-size: 1rem; font-weight: 600; color: var(--text-secondary); }
+    .section-title { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-3); }
+    .room-list { display: flex; flex-direction: column; gap: var(--space-2); }
+    .room-item { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); }
+    .room-info { display: flex; align-items: center; gap: var(--space-3); }
+    .room-name { font-weight: 500; }
+    .room-meta { font-size: 0.875rem; color: var(--text-muted); }
+
+    /* ===== GAME BOARD ===== */
+    .game-layout { display: grid; grid-template-columns: 240px 1fr; gap: var(--space-4); padding: var(--space-4); height: 100%; }
+    .game-sidebar { display: flex; flex-direction: column; gap: var(--space-3); }
+    .player-panel { background: var(--bg-surface); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); }
+    .player-panel-header { display: flex; align-items: center; gap: var(--space-3); }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; border: 2px solid; }
+    .avatar-red { background: var(--piece-red-bg); border-color: #ef4444; color: white; }
+    .avatar-black { background: #1f2937; border-color: #fbbf24; color: #fbbf24; }
+    .avatar-neutral { background: var(--bg-elevated); border-color: var(--text-muted); color: var(--text-secondary); }
+    .player-info { flex: 1; min-width: 0; }
+    .player-name { font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+    .player-name span { font-weight: 400; color: var(--text-muted); font-size: 0.8rem; }
+    .player-stats { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+    .turn-timer { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 600; }
+    .turn-indicator { display: flex; align-items: center; gap: 6px; }
+    .turn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+    .turn-dot.active { background: var(--success); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .timer-warning { color: var(--warning); }
+    .timer-danger { color: var(--danger); }
+
+    .board-wrapper { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
+    .board-container { background: var(--board-dark); border-radius: var(--radius-lg); padding: 4px; box-shadow: var(--shadow-elevated); position: relative; }
+    .board-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 0; position: relative; }
+    .board-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; position: relative; border: 1px solid rgba(0,0,0,0.15); }
+    .board-cell.light { background: var(--board-light); }
+    .board-cell.dark { background: var(--board-dark); }
+    .board-cell.river-h { background: var(--board-river); opacity: 0.5; }
+
+    .piece {
+      width: 85%; height: 85%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5); position: relative; z-index: 1;
+    }
+    .piece-red { background: var(--piece-red-bg); color: white; border: 2px solid white; }
+    .piece-black { background: #1f2937; color: #fbbf24; border: 2px solid #fbbf24; }
+    .piece:hover { transform: scale(1.08); }
+    .piece.selected { box-shadow: 0 0 0 3px var(--highlight-selected), 0 3px 6px rgba(0,0,0,0.5); transform: scale(1.05); }
+    .piece.valid-move::after {
+      content: ''; position: absolute; width: 35%; height: 35%;
+      background: var(--highlight-valid); border-radius: 33%; z-index: 2;
+    }
+    .piece.last-move { box-shadow: 0 0 0 3px var(--highlight-last-move), 0 3px 6px rgba(0,0,0,0.5); }
+    .piece.in-check { animation: checkPulse 1s ease-in-out infinite; }
+    @keyframes checkPulse { 0%,100% { box-shadow: 0 0 0 3px var(--highlight-check), 0 3px 6px rgba(0,0,0,0.5); } 50% { box-shadow: 0 0 0 6px var(--highlight-check), 0 3px 6px rgba(0,0,0,0.5); } }
+
+    .board-controls { display: flex; gap: var(--space-2); }
+
+    .move-history { background: var(--bg-surface); border-radius: var(--radius-lg); padding: var(--space-3); max-height: 280px; overflow-y: auto; }
+    .move-history h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: var(--space-2); }
+    .move-list { display: flex; flex-direction: column; gap: 2px; }
+    .move-entry { display: flex; align-items: center; gap: var(--space-2); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.8rem; cursor: pointer; }
+    .move-entry:hover { background: rgba(255,255,255,0.04); }
+    .move-entry.current { background: rgba(251, 191, 36, 0.1); }
+    .move-num { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; width: 20px; flex-shrink: 0; }
+    .move-notation { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 0.85rem; }
+
+    /* ===== ROOM WAITING ===== */
+    .waiting-card { max-width: 420px; margin: 0 auto; text-align: center; padding: var(--space-8); }
+    .waiting-card h2 { margin-bottom: var(--space-6); }
+    .room-code-box { background: var(--bg-elevated); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin: var(--space-6) 0; }
+    .room-code { font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); }
+    .share-buttons { display: flex; justify-content: center; gap: var(--space-3); margin-bottom: var(--space-6); }
+    .player-slot { background: var(--bg-surface); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); display: flex; align-items: center; gap: var(--space-3); }
+    .player-slot.empty { border: 1px dashed var(--text-muted); background: transparent; }
+    .waiting-text { color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+    .waiting-dots { display: flex; gap: 4px; }
+    .waiting-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); animation: dotPulse 1.4s ease-in-out infinite; }
+    .waiting-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .waiting-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotPulse { 0%,80%,100% { transform: scale(1); opacity: 1; } 40% { transform: scale(0.6); opacity: 0.4; } }
+
+    /* ===== GAME END MODAL ===== */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: var(--bg-elevated); border-radius: var(--radius-xl); max-width: 420px; width: 90%; box-shadow: var(--shadow-elevated); animation: modalIn 0.25s ease-out; text-align: center; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .modal-header { padding: var(--space-8) var(--space-6) var(--space-4); }
+    .result-win { font-size: 2rem; font-weight: 700; color: var(--success); }
+    .result-lose { font-size: 2rem; font-weight: 700; color: var(--danger); }
+    .result-draw { font-size: 2rem; font-weight: 700; color: var(--warning); }
+    .result-winner { font-size: 1.1rem; color: var(--text-secondary); margin-top: var(--space-2); }
+    .modal-body { padding: 0 var(--space-6) var(--space-6); }
+    .modal-buttons { display: flex; gap: var(--space-3); flex-direction: column; }
+    .modal-buttons .btn { flex: 1; }
+    .result-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-bottom: var(--space-4); }
+    .result-stat { text-align: center; }
+    .result-stat-value { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+    .result-stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ===== CREATE ROOM MODAL ===== */
+    .modal-form { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+    .form-group { display: flex; flex-direction: column; gap: var(--space-2); text-align: left; }
+    .form-group label { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); }
+    .form-group .input, .form-group .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle-row { background: var(--bg-surface); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); cursor: pointer; }
+    .toggle { width: 40px; height: 22px; background: var(--text-muted); border-radius: 11px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+    .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: left 0.2s; }
+    .toggle.on { background: var(--primary); }
+    .toggle.on::after { left: 21px; }
+
+    /* ===== CONFETCI ===== */
+    .confetti-container { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 99; }
+    .confetti { position: absolute; width: 8px; height: 8px; top: -20px; animation: confettiFall 2.5s ease-in forwards; }
+    @keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+
+    /* ===== RULES MODAL ===== */
+    .rules-modal { max-width: 600px; width: 90%; }
+    .rules-modal .modal-body { max-height: 70vh; overflow-y: auto; padding: var(--space-4); }
+    .rules-section { margin-bottom: var(--space-6); }
+    .rules-section h4 { font-size: 1rem; font-weight: 700; margin-bottom: var(--space-2); display: flex; align-items: center; gap: var(--space-2); }
+    .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    .rules-item { display: flex; align-items: center; gap: var(--space-3); }
+    .rules-piece-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; flex-shrink: 0; }
+    .rules-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.4; }
+
+    /* ===== TOAST ===== */
+    .toast-container { position: fixed; bottom: var(--space-6); left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: var(--space-2); align-items: center; }
+    .toast { background: var(--bg-elevated); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); box-shadow: var(--shadow-elevated); font-size: 0.875rem; animation: toastIn 0.2s ease-out; display: flex; align-items: center; gap: var(--space-2); }
+    .toast-success { border-left: 3px solid var(--success); }
+    .toast-error { border-left: 3px solid var(--danger); }
+    .toast-info { border-left: 3px solid var(--primary); }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ===== MOBILE SHIM ===== */
+    .mobile-shim {
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+    }
+    .mobile-shim::before {
+      content: '375px';
+      position: absolute; top: -20px; left: 8px;
+      font-size: 10px; color: var(--primary); font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <h2>Screens</h2>
+  <ul>
+    <li><button class="active" data-screen="lobby">Lobby</button></li>
+    <li><button data-screen="create-room">Create Room Modal</button></li>
+    <li><button data-screen="room-waiting">Room — Waiting</button></li>
+    <li><button data-screen="game-playing">Game — My Turn</button></li>
+    <li><button data-screen="game-opponent">Game — Opponent Turn</button></li>
+    <li><button data-screen="game-check">Game — Check State</button></li>
+    <li><button data-screen="game-result-win">Result — Win</button></li>
+    <li><button data-screen="game-result-lose">Result — Loss</button></li>
+    <li><button data-screen="rules">Rules Modal</button></li>
+  </ul>
+</nav>
+
+<div id="preview">
+  <div id="viewport-toggle">
+    <span>Viewport:</span>
+    <button id="btn-desktop" class="active" onclick="setViewport('desktop')">Desktop</button>
+    <button id="btn-mobile" onclick="setViewport('mobile')">375px Mobile</button>
+  </div>
+
+  <div id="screen-container">
+    <div id="screen-wrapper">
+
+      <!-- ===================== LOBBY ===================== -->
+      <div data-screen="lobby" class="active">
+        <div class="lobby-header">
+          <div class="logo">
+            <div class="logo-icon">車</div>
+            <span>Cờ Tướng Online</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="showRules()">? Luật chơi</button>
+        </div>
+        <div class="lobby-body">
+          <div class="lobby-top">
+            <div class="card action-card">
+              <h3>Tạo phòng mới</h3>
+              <button class="btn btn-primary btn-lg" onclick="showCreateRoom()">+ Tạo phòng</button>
+            </div>
+            <div class="card action-card">
+              <h3>Tham gia bằng mã</h3>
+              <div style="display:flex;gap:8px;">
+                <input class="input mono" style="flex:1" placeholder="Mã phòng" maxlength="6" value="X7K2M1">
+                <button class="btn btn-secondary btn-md">Tham gia</button>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="section-title">Các phòng đang chờ</h3>
+          <div class="room-list">
+            <div class="card card-hoverable room-item" style="margin-bottom:8px">
+              <div class="room-info">
+                <div class="avatar avatar-neutral">M</div>
+                <div>
+                  <div class="room-name">Phòng của Minh</div>
+                  <div class="room-meta">1/2 · Đang chờ</div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm">Tham gia</button>
+            </div>
+            <div class="card card-hoverable room-item" style="margin-bottom:8px">
+              <div class="room-info">
+                <div class="avatar avatar-neutral">H</div>
+                <div>
+                  <div class="room-name">Chiến tranh cờ</div>
+                  <div class="room-meta">1/2 · Đang chờ</div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm">Tham gia</button>
+            </div>
+            <div class="card card-hoverable room-item">
+              <div class="room-info">
+                <div class="avatar avatar-neutral">T</div>
+                <div>
+                  <div class="room-name">Cờ tướng vui vẻ</div>
+                  <div class="room-meta">1/2 · Đang chơi</div>
+                </div>
+              </div>
+              <button class="btn btn-secondary btn-sm">Theo dõi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== CREATE ROOM MODAL ===================== -->
+      <div data-screen="create-room">
+        <div class="modal-backdrop" style="position:relative;background:rgba(0,0,0,0.5);backdrop-filter:none;">
+          <div class="modal card" style="max-width:420px;padding:0;">
+            <div class="modal-form">
+              <h3 style="font-size:22px;font-weight:700;margin-bottom:8px;">Tạo phòng mới</h3>
+              <div class="form-group">
+                <label>Tên phòng</label>
+                <input class="input" placeholder="Phòng của tôi" maxlength="30">
+              </div>
+              <div class="form-group">
+                <label>Tên của bạn</label>
+                <input class="input" placeholder="Nhập tên của bạn" maxlength="20">
+              </div>
+              <div class="form-group">
+                <label>Chế độ riêng tư</label>
+                <div class="toggle-row" onclick="this.querySelector('.toggle').classList.toggle('on');this.querySelector('.toggle').classList.toggle('on')">
+                  <span style="font-size:0.875rem;color:var(--text-secondary)">Phòng riêng</span>
+                  <div class="toggle"></div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-lg" onclick="showScreen('room-waiting')" style="width:100%">Tạo phòng</button>
+              <button class="btn btn-ghost" onclick="hideCreateRoom()">Hủy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== ROOM WAITING ===================== -->
+      <div data-screen="room-waiting">
+        <div class="lobby-header">
+          <div class="logo">
+            <div class="logo-icon">車</div>
+            <span>Cờ Tướng Online</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="showRules()">? Luật chơi</button>
+        </div>
+        <div style="padding:var(--space-6);display:flex;justify-content:center;align-items:center;min-height:calc(100vh - 64px);">
+          <div class="card waiting-card">
+            <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:4px;">PHÒNG CỦA MINH</h2>p
+            <div class="room-code-box">
+              <div class="room-code">X7K2M1</div>
+            </div>
+            <div class="share-buttons">
+              <button class="btn btn-secondary btn-sm" onclick="showToast('Đã sao chép mã phòng!','success')">📋 Sao chép</button>
+              <button class="btn btn-secondary btn-sm" onclick="showToast('Đã sao chép đường liên kết!','success')">🔗 Chia sẻ</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+              <div class="player-slot">
+                <div class="avatar avatar-red">M</div>
+                <div style="text-align:left;flex:1">
+                  <div class="player-name">Minh <span>(Host)</span></div>
+                </div>
+              </div>
+              <div class="player-slot empty">
+                <div class="avatar avatar-neutral">?</div>
+                <div style="text-align:left;flex:1">
+                  <div class="player-name" style="color:var(--text-muted)">Đang chờ đối thủ...</div>
+                </div>
+              </div>
+            </div>
+            <div class="waiting-text">
+              <span>Đang chờ đối thủ</span>
+              <div class="waiting-dots"><span></span><span></span><span></span></div>
+            </div>
+            <button class="btn btn-ghost" onclick="showScreen('lobby')" style="margin-top:20px">Thoát</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== GAME PLAYING — MY TURN ===================== -->
+      <div data-screen="game-playing">
+        <div class="lobby-header" style="padding:12px 16px;">
+          <div class="logo" style="font-size:1rem;"><div class="logo-icon" style="width:28px;height:28px;font-size:12px">車</div><span>Cờ Tướng Online</span></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="showRules()">?</button>
+          </div>
+        </div>
+        <div class="game-layout">
+          <div class="game-sidebar" style="gap:10px">
+            <div class="player-panel">
+              <div class="player-panel-header">
+                <div class="avatar avatar-black">H</div>
+                <div class="player-info">
+                  <div class="player-name">Hùng <span>(Đối thủ)</span></div>
+                  <div class="turn-indicator"><span class="turn-dot"></span><span style="font-size:0.8rem;color:var(--text-muted)">Đang chờ...</span></div>
+                </div>
+              </div>
+              <div style="margin-top:8px;text-align:center;">
+                <span class="turn-timer">4:32</span>
+              </div>
+            </div>
+            <div class="move-history">
+              <h4>Lịch sử nước đi</h4>
+              <div class="move-list">
+                <div class="move-entry">
+                  <span class="move-num">1.</span>
+                  <span class="move-notation"> Xe9.1 </span>
+                  <span style="font-size:0.75rem;color:var(--text-muted)">Hùng</span>
+                </div>
+                <div class="move-entry">
+                  <span class="move-num">2.</span>
+                  <span class="move-notation"> 兵5.6 </span>
+                  <span style="font-size:0.75rem;color:var(--text-muted)">Minh</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="board-wrapper" style="justify-content:center;">
+            <div class="board-container" style="width:432px;">
+              <div class="board-grid" id="board-demo">
+                <!-- Generated by JS -->
+              </div>
+            </div>
+            <div class="board-controls">
+              <button class="btn btn-ghost btn-sm">↩ Undo</button>
+              <button class="btn btn-ghost btn-sm" onclick="showRules()">? Luật</button>
+            </div>
+          </div>
+          <div class="player-panel" style="background:var(--bg-elevated);border:1px solid rgba(37,99,235,0.3)">
+            <div class="player-panel-header">
+              <div class="avatar avatar-red">M</div>
+              <div class="player-info">
+                <div class="player-name" style="color:var(--primary)">Minh <span style="color:var(--primary)">(Bạn)</span></div>
+                <div class="turn-indicator">
+                  <span class="turn-dot active"></span>
+                  <span style="font-size:0.8rem;color:var(--success);font-weight:500">Lượt của bạn!</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:8px;text-align:center">
+              <span class="turn-timer" style="color:var(--success)">3:45</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== GAME — OPPONENT TURN ===================== -->
+      <div data-screen="game-opponent">
+        <div class="lobby-header" style="padding:12px 16px;">
+          <div class="logo" style="font-size:1rem;"><div class="logo-icon" style="width:28px;height:28px;font-size:12px">車</div><span>Cờ Tướng Online</span></div>
+          <button class="btn btn-ghost btn-sm" onclick="showRules()">?</button>
+        </div>
+        <div class="game-layout">
+          <div class="game-sidebar">
+            <div class="player-panel" style="background:var(--bg-elevated);border:1px solid rgba(37,99,235,0.3)">
+              <div class="player-panel-header">
+                <div class="avatar avatar-black">H</div>
+                <div class="player-info">
+                  <div class="player-name" style="color:var(--success)">Hùng <span style="color:var(--success)">(Lượt)</span></div>
+                  <div class="turn-indicator"><span class="turn-dot active"></span><span style="font-size:0.8rem;color:var(--success);font-weight:500">Đang đi...</span></div>
+                </div>
+              </div>
+              <div style="margin-top:8px;text-align:center;"><span class="turn-timer" style="color:var(--success)">4:32</span></div>
+            </div>
+            <div class="move-history">
+              <h4>Lịch sử nước đi</h4>
+              <div class="move-list">
+                <div class="move-entry"><span class="move-num">1.</span><span class="move-notation"> Xe9.1 </span><span style="font-size:0.75rem;color:var(--text-muted)">Hùng</span></div>
+                <div class="move-entry current"><span class="move-num">2.</span><span class="move-notation"> 兵5.6 </span><span style="font-size:0.75rem;color:var(--text-muted)">Minh</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="board-wrapper" style="justify-content:center;">
+            <div class="board-container" style="width:432px;opacity:0.85">
+              <div class="board-grid" id="board-opponent"></div>
+            </div>
+          </div>
+          <div class="player-panel">
+            <div class="player-panel-header">
+              <div class="avatar avatar-red">M</div>
+              <div class="player-info">
+                <div class="player-name">Minh <span>(Bạn)</span></div>
+                <div class="turn-indicator"><span class="turn-dot"></span><span style="font-size:0.8rem;color:var(--text-muted)">Chờ đối thủ...</span></div>
+              </div>
+            </div>
+            <div style="margin-top:8px;text-align:center"><span class="turn-timer">3:45</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== GAME — CHECK STATE ===================== -->
+      <div data-screen="game-check">
+        <div class="lobby-header" style="padding:12px 16px;background:var(--danger);opacity:0.8">
+          <div class="logo" style="font-size:1rem;"><div class="logo-icon" style="width:28px;height:28px;font-size:12px;background:#fbbf24;color:#1f2937">將</div><span style="color:white">Cờ Tướng Online</span></div>
+        </div>
+        <div class="game-layout">
+          <div class="game-sidebar">
+            <div class="player-panel">
+              <div class="player-panel-header">
+                <div class="avatar avatar-black">H</div>
+                <div class="player-info">
+                  <div class="player-name">Hùng <span>(Đối thủ)</span></div>
+                  <div class="turn-indicator"><span class="turn-dot active"></span><span style="font-size:0.8rem;color:var(--success)">Đang đi...</span></div>
+                </div>
+              </div>
+              <div style="margin-top:8px;text-align:center;"><span class="turn-timer">4:32</span></div>
+            </div>
+            <div style="background:var(--bg-surface);border-radius:12px;padding:12px 16px;border-left:3px solid var(--danger)">
+              <span style="font-size:0.875rem;font-weight:600;color:var(--danger)">⚠ Tướng đang bị chiếu!</span>
+            </div>
+            <div class="move-history">
+              <h4>Lịch sử nước đi</h4>
+              <div class="move-list">
+                <div class="move-entry"><span class="move-num">1.</span><span class="move-notation"> Xe9.1 </span><span style="font-size:0.75rem;color:var(--text-muted)">Hùng</span></div>
+                <div class="move-entry"><span class="move-num">2.</span><span class="move-notation"> 兵5.6 </span><span style="font-size:0.75rem;color:var(--text-muted)">Minh</span></div>
+                <div class="move-entry"><span class="move-num">3.</span><span class="move-notation"> 炮4.5 </span><span style="font-size:0.75rem;color:var(--text-muted)">Hùng</span></div>
+                <div class="move-entry current"><span class="move-num">4.</span><span class="move-notation"> 仕4.6 </span><span style="font-size:0.75rem;color:var(--text-muted)">Minh</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="board-wrapper" style="justify-content:center;">
+            <div class="board-container" style="width:432px">
+              <div class="board-grid" id="board-check"></div>
+            </div>
+          </div>
+          <div class="player-panel">
+            <div class="player-panel-header">
+              <div class="avatar avatar-red" style="box-shadow:0 0 0 3px var(--highlight-check)">M</div>
+              <div class="player-info">
+                <div class="player-name">Minh <span>(Bạn)</span></div>
+                <div class="turn-indicator"><span class="turn-dot active"></span><span style="font-size:0.8rem;color:var(--danger)">Tướng bị chiếu!</span></div>
+              </div>
+            </div>
+            <div style="margin-top:8px;text-align:center;"><span class="turn-timer timer-danger">2:15</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== RESULT — WIN ===================== -->
+      <div data-screen="game-result-win">
+        <div class="modal-backdrop" style="position:relative;background:#12121a;">
+          <div class="confetti-container" id="confetti-win"></div>
+          <div class="modal" style="padding:0;overflow:hidden">
+            <div class="modal-header">
+              <div class="result-win">✨ CHIẾN THẮNG! ✨</div>
+              <div class="result-winner">Minh thắng! (Checkmate)</div>
+            </div>
+            <div class="modal-body">
+              <div class="result-stats">
+                <div class="result-stat"><div class="result-stat-value">38</div><div class="result-stat-label">Nước đi</div></div>
+                <div class="result-stat"><div class="result-stat-value">12:34</div><div class="result-stat-label">Thời gian</div></div>
+                <div class="result-stat"><div class="result-stat-value">2:15</div><div class="result-stat-label">Còn lại</div></div>
+              </div>
+              <div class="modal-buttons">
+                <button class="btn btn-accent btn-lg">Đấu lại</button>
+                <button class="btn btn-secondary btn-lg" onclick="showScreen('lobby')">Thoát</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== RESULT — LOSE ===================== -->
+      <div data-screen="game-result-lose">
+        <div class="modal-backdrop" style="position:relative;background:#12121a;">
+          <div class="modal" style="padding:0;overflow:hidden">
+            <div class="modal-header">
+              <div class="result-lose">THUA CUỘC</div>
+              <div class="result-winner">Hùng thắng! (Hết giờ)</div>
+            </div>
+            <div class="modal-body">
+              <div class="result-stats">
+                <div class="result-stat"><div class="result-stat-value">28</div><div class="result-stat-label">Nước đi</div></div>
+                <div class="result-stat"><div class="result-stat-value">8:05</div><div class="result-stat-label">Thời gian</div></div>
+                <div class="result-stat"><div class="result-stat-value">0:00</div><div class="result-stat-label">Còn lại</div></div>
+              </div>
+              <div class="modal-buttons">
+                <button class="btn btn-accent btn-lg">Đấu lại</button>
+                <button class="btn btn-secondary btn-lg" onclick="showScreen('lobby')">Thoát</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== RULES MODAL ===================== -->
+      <div data-screen="rules">
+        <div class="modal-backdrop" style="position:relative;background:rgba(0,0,0,0.5);backdrop-filter:none;">
+          <div class="modal rules-modal card" style="padding:0;max-width:600px">
+            <div style="padding:var(--space-4) var(--space-6);border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center">
+              <h3 style="font-size:1.25rem;font-weight:700">Luật Cờ Tướng</h3>
+              <button class="btn btn-ghost btn-sm" onclick="showScreen('lobby')" style="padding:4px 8px">✕</button>
+            </div>
+            <div class="modal-body" style="padding:var(--space-4) var(--space-6)">
+              <div class="rules-grid">
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-red" style="color:white">帥</div>
+                  <div><strong style="display:block;margin-bottom:2px">Tướng (General)</strong><div class="rules-desc">Di chuyển 1 ô theo chiều dọc hoặc ngang, trong cung Tướng.</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-black" style="color:#fbbf24">將</div>
+                  <div><strong style="display:block;margin-bottom:2px">Tướng (General)</strong><div class="rules-desc">Di chuyển 1 ô theo chiều dọc hoặc ngang, trong cung Tướng.</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-red">仕</div>
+                  <div><strong style="display:block;margin-bottom:2px">Sĩ (Advisor)</strong><div class="rules-desc">Di chuyển 1 ô theo đường chéo, trong cung Tướng.</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-black">士</div>
+                  <div><strong style="display:block;margin-bottom:2px">Sĩ (Advisor)</strong><div class="rules-desc">Di chuyển 1 ô theo đường chéo, trong cung Tướng.</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-red">相</div>
+                  <div><strong style="display:block;margin-bottom:2px">Tượng (Elephant)</strong><div class="rules-desc">Di chuyển 2 ô theo đường chéo, không qua sông.</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-black">象</div>
+                  <div><strong style="display:block;margin-bottom:2px">Tượng (Elephant)</strong><div class="rules-desc">Di chuyển 2 ô theo đường chéo, không qua sông.</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-red">車</div>
+                  <div><strong style="display:block;margin-bottom:2px">Xe (Chariot)</strong><div class="rules-desc">Di chuyển bao nhiêu ô tùy ý theo dọc hoặc ngang.</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-black">馬</div>
+                  <div><strong style="display:block;margin-bottom:2px">Mã (Horse)</strong><div class="rules-desc">Di chuyển 1 ô dọc/ngang rồi 1 ô chéo (chân ngựa).</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-red">炮</div>
+                  <div><strong style="display:block;margin-bottom:2px">Pháo (Cannon)</strong><div class="rules-desc">Di chuyển bao nhiêu ô tùy ý dọc/ngang; bắt phải nhảy đúng 1 quân.</div></div>
+                </div>
+                <div class="rules-item">
+                  <div class="rules-piece-icon piece-red">兵</div>
+                  <div><strong style="display:block;margin-bottom:2px">Tốt (Soldier)</strong><div class="rules-desc">Đi 1 ô tiến về phía trước; qua sông được đi ngang thêm 1 ô.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  // ===================== BOARD GENERATION =====================
+  const PIECES = {
+    RED: {
+      GENERAL: '帥', ADVISOR: '仕', ELEPHANT: '相', CHARIOT: '車',
+      HORSE: '馬', CANNON: '炮', SOLDIER: '兵'
+    },
+    BLACK: {
+      GENERAL: '將', ADVISOR: '士', ELEPHANT: '象', CHARIOT: '車',
+      HORSE: '馬', CANNON: '炮', SOLDIER: '卒'
+    }
+  };
+
+  // Starting position helpers (row 0 = top = red side)
+  function buildInitialBoard() {
+    const board = Array(10).fill(null).map(() => Array(9).fill(null));
+    // Row 0 (top, red): chars start positions
+    board[0] = [
+      { c: 'BLACK', t: 'CHARIOT' }, null, null, null, null, null, null, null, null
+    ];
+    return board;
+  }
+
+  const PIECEChars = {
+    BLACK: { CHARIOT: '車', HORSE: '馬', CANNON: '炮', SOLDIER: '卒', GENERAL: '將', ADVISOR: '士', ELEPHANT: '象' },
+    RED: { CHARIOT: '車', HORSE: '馬', CANNON: '炮', SOLDIER: '兵', GENERAL: '帥', ADVISOR: '仕', ELEPHANT: '相' }
+  };
+
+  function createPieceCell(char, color, isSelected, isCheck) {
+    const div = document.createElement('div');
+    div.style.cssText = `width:85%;height:85%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,0.5);position:relative;`;
+    if (color === 'RED') { div.style.background = '#dc2626'; div.style.color = 'white'; div.style.border = '2px solid white'; }
+    else { div.style.background = '#1f2937'; div.style.color = '#fbbf24'; div.style.border = '2px solid #fbbf24'; }
+    if (isSelected) div.style.boxShadow = '0 0 0 3px rgba(251,191,36,0.5), 0 3px 6px rgba(0,0,0,0.5)';
+    if (isCheck) { div.style.animation = 'checkPulse 1s ease-in-out infinite'; }
+    div.textContent = char;
+    return div;
+  }
+
+  function createEmptyCell(isRiverH) {
+    const div = document.createElement('div');
+    div.style.aspectRatio = '1';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.justifyContent = 'center';
+    div.style.border = '1px solid rgba(0,0,0,0.15)';
+    if (isRiverH) div.style.background = 'rgba(61,122,158,0.4)';
+    else div.style.background = (Math.random() > 0.5) ? '#d4b896' : '#c4a876';
+    return div;
+  }
+
+  // Build a preview board with some pieces placed
+  function buildDemoBoard(containerId, options = {}) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(9, 1fr)';
+    container.style.gap = '0';
+    container.style.width = '432px';
+
+    // Simple 10x9 board with some demo pieces
+    const demo = [
+      { row: 0, col: 0, c: 'BLACK', t: 'CHARIOT' },
+      { row: 2, col: 4, c: 'BLACK', t: 'GENERAL' },
+      { row: 3, col: 1, c: 'RED', t: 'HORSE' },
+      { row: 6, col: 4, c: 'RED', t: 'GENERAL' },
+      { row: 4, col: 2, c: 'RED', t: 'CANNON' },
+    ];
+
+    // Demo: mark some valid moves for selected piece
+    let selectedPos = null;
+    if (options.selected) selectedPos = demo[2]; // RED horse selected
+
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 9; c++) {
+        const cell = createEmptyCell(r === 4 || r === 5);
+        // River rows
+        const piece = demo.find(p => p.row === r && p.col === c);
+        if (piece) {
+          const char = PIECEChars[piece.c][piece.t];
+          const isSel = options.selected && piece.r === r && piece.c === c;
+          cell.appendChild(createPieceCell(char, piece.c, isSel, false));
+        }
+        // Show valid move dots if selected piece on row 3
+        if (selectedPos && r === 3 && c === 3) {
+          const dot = document.createElement('div');
+          dot.style.cssText = 'width:35%;height:35%;background:rgba(34,197,94,0.7);border-radius:50%;position:relative;z-index:2';
+          cell.appendChild(dot);
+        }
+        if (selectedPos && r === 5 && c === 2) {
+          const dot = document.createElement('div');
+          dot.style.cssText = 'width:35%;height:35%;background:rgba(34,197,94,0.7);border-radius:50%;position:relative;z-index:2';
+          cell.appendChild(dot);
+        }
+        container.appendChild(cell);
+      }
+    }
+  }
+
+  // ===================== SCREEN NAVIGATION =====================
+  function showScreen(name) {
+    document.querySelectorAll('[data-screen]').forEach(el => el.classList.remove('active'));
+    const target = document.querySelector(`[data-screen="${name}"]`);
+    if (target) target.classList.add('active');
+
+    document.querySelectorAll('#sidebar button:not(.section-title)').forEach(btn => btn.classList.remove('active'));
+    const btn = document.querySelector(`#sidebar button[data-screen="${name}"]`);
+    if (btn) btn.classList.add('active');
+
+    window.currentScreen = name;
+
+    // Build boards for game screens
+    if (name === 'game-playing') buildDemoBoard('board-demo', { selected: true });
+    if (name === 'game-opponent') buildDemoBoard('board-opponent', {});
+    if (name === 'game-check') buildDemoBoard('board-check', { check: true });
+
+    // Show confetti on win screen
+    if (name === 'game-result-win') spawnConfetti();
+  }
+
+  window.showScreen = showScreen;
+
+  document.querySelectorAll('#sidebar button:not(.section-title)').forEach(btn => {
+    btn.addEventListener('click', () => showScreen(btn.dataset.screen));
+  });
+
+  // ===================== VIEWPORT TOGGLE =====================
+  function setViewport(mode) {
+    const wrapper = document.getElementById('screen-wrapper');
+    const btnD = document.getElementById('btn-desktop');
+    const btnM = document.getElementById('btn-mobile');
+
+    if (mode === 'mobile') {
+      wrapper.style.maxWidth = '375px';
+      wrapper.style.transition = 'max-width 0.3s';
+      btnD.classList.remove('active');
+      btnM.classList.add('active');
+    } else {
+      wrapper.style.maxWidth = '960px';
+      btnD.classList.add('active');
+      btnM.classList.remove('active');
+    }
+  }
+
+  window.setViewport = setViewport;
+
+  // ===================== MODALS / TOAST =====================
+  function showRules() { showScreen('rules'); }
+  function showCreateRoom() { showScreen('create-room'); }
+  function hideCreateRoom() { showScreen('lobby'); }
+
+  function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icons = { success: '✓', error: '✕', info: 'ⓘ' };
+    toast.innerHTML = `<span>${icons[type] || 'ⓘ'}</span> ${msg}`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  window.showToast = showToast;
+  window.showRules = showRules;
+  window.showCreateRoom = showCreateRoom;
+  window.hideCreateRoom = hideCreateRoom;
+
+  // ===================== CONFETTI =====================
+  function spawnConfetti() {
+    const container = document.getElementById('confetti-win') || document.querySelector('.confetti-container');
+    if (!container) return;
+    container.innerHTML = '';
+    const colors = ['#22c55e', '#fbbf24', '#dc2626', '#3b82f6', '#f97316'];
+    for (let i = 0; i < 50; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 100 + '%';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDelay = Math.random() * 1.5 + 's';
+      c.style.animationDuration = (2 + Math.random()) + 's';
+      container.appendChild(c);
+    }
+  }
+
+  // ===================== INIT =====================
+  buildDemoBoard('board-demo', { selected: true });
+  buildDemoBoard('board-opponent', {});
+</script>
+
+</body>
+</html>

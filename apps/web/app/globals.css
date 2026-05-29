@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg-page: #12121a;
+  --bg-surface: #1a1d27;
+  --bg-elevated: #232638;
+  --board-light: #d4b896;
+  --board-dark: #c4a876;
+  --board-river: #3d7a9e;
+  --board-palace: #b89860;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #3b82f6;
+  --accent: #f97316;
+  --accent-hover: #ea580c;
+  --success: #22c55e;
+  --warning: #eab308;
+  --danger: #ef4444;
+  --piece-red-bg: #dc2626;
+  --piece-red-char: #ffffff;
+  --piece-black-bg: #1f2937;
+  --piece-black-char: #fbbf24;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --highlight-selected: rgba(251, 191, 36, 0.5);
+  --highlight-valid: rgba(34, 197, 94, 0.6);
+  --highlight-check: rgba(239, 68, 68, 0.6);
+  --highlight-last-move: rgba(251, 191, 36, 0.3);
+
+  --board-size-desktop: 576px;
+  --board-size-tablet: 432px;
+  --board-size-mobile: 315px;
+  --cell-size-desktop: 64px;
+  --cell-size-tablet: 48px;
+  --cell-size-mobile: 35px;
+  --piece-size-desktop: 52px;
+  --piece-size-mobile: 30px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-hover;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-accent-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent text-text-secondary border border-text-muted hover:bg-bg-elevated;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-text-secondary hover:bg-bg-elevated;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white hover:bg-red-600;
+  }
+
+  .card {
+    @apply bg-bg-surface rounded-xl shadow-card p-4;
+  }
+
+  .input {
+    @apply bg-bg-surface border border-text-muted rounded-lg px-4 py-2 text-text-primary focus:border-primary focus:outline-none transition-colors;
+  }
+
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/60 flex items-center justify-center z-50;
+  }
+
+  .modal {
+    @apply bg-bg-elevated rounded-2xl shadow-modal p-6 max-w-md w-full mx-4;
+  }
+
+  .piece {
+    @apply rounded-full flex items-center justify-center font-bold shadow-piece transition-transform;
+  }
+
+  .piece-red {
+    @apply bg-piece-red-bg text-white border-2 border-white;
+  }
+
+  .piece-black {
+    @apply bg-piece-black-bg text-yellow-400 border-2 border-yellow-400;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px var(--highlight-check);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--highlight-check);
+  }
+}
+
+.check-pulse {
+  animation: pulse-glow 1s ease-in-out infinite;
+}
+
+/* Board cell styles */
+.board-cell {
+  @apply relative flex items-center justify-center;
+}
+
+.board-cell-light {
+  background-color: var(--board-light);
+}
+
+.board-cell-dark {
+  background-color: var(--board-dark);
+}
+
+.valid-move-dot {
+  @apply absolute w-4 h-4 rounded-full;
+  background-color: var(--highlight-valid);
+}
+
+.selected-cell {
+  box-shadow: inset 0 0 0 3px var(--highlight-selected);
+}
+
+.last-move-cell {
+  background-color: var(--highlight-last-move);
+}
+
+.check-cell {
+  @apply check-pulse;
+  background-color: var(--highlight-check) !important;
+}
