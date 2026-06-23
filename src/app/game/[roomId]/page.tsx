@@ -31,7 +31,7 @@ export default function GamePage({ params }: { params: Params }) {
 
   const [showResult, setShowResult] = useState(false)
   const [roomJoined, setRoomJoined] = useState(false)
-  const [activePanel, setActivePanel] = useState<'moves' | 'sidebar'>('moves')
+  // activePanel state removed - sidebar now shows all panels at once
   const [resignConfirm, setResignConfirm] = useState(false)
   const [showTakebackRejected, setShowTakebackRejected] = useState(false)
   const prevTakebackStatusRef = useRef<string | null>(null)
@@ -372,48 +372,19 @@ export default function GamePage({ params }: { params: Params }) {
           )}
         </div>
 
-        {/* Side panel - Right side (desktop only): Moves + Chat/Spectators */}
-        <aside className="hidden lg:flex flex-col w-80 border-l border-[var(--c-border)] bg-[var(--c-surface)]">
-          {/* Toggle between moves and sidebar */}
-          <div className="flex border-b border-[var(--c-border)]">
-            <button
-              onClick={() => setActivePanel('moves')}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
-                activePanel === 'moves'
-                  ? 'text-[var(--c-accent)] border-b-2 border-[var(--c-accent)]'
-                  : 'text-[var(--c-muted)] hover:text-[var(--c-text)]'
-              }`}
-            >
-              📜 {t('moveHistory')}
-            </button>
-            <button
-              onClick={() => setActivePanel('sidebar')}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
-                activePanel === 'sidebar'
-                  ? 'text-[var(--c-accent)] border-b-2 border-[var(--c-accent)]'
-                  : 'text-[var(--c-muted)] hover:text-[var(--c-text)]'
-              }`}
-            >
-              💬 {t('chat')} {playingGame.chat.length > 0 && `(${playingGame.chat.length})`} · 👁 ({playingGame.spectators.length})
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {activePanel === 'moves' && <MoveHistory moves={playingGame.moves} />}
-            {activePanel === 'sidebar' && (
-              <GameSidebar
-                messages={playingGame.chat}
-                spectators={playingGame.spectators}
-                mutedDeviceIds={playingGame.mutedDeviceIds}
-                isHost={isHost}
-                deviceId={deviceId}
-                onSend={sendChat}
-                onMute={mutePlayer}
-                t={t}
-              />
-            )}
-          </div>
+        {/* Side panel - Right side (desktop only): All 3 panels always visible */}
+        <aside className="hidden lg:flex flex-col w-80 border-l border-[var(--c-border)] bg-[var(--c-surface)] overflow-hidden">
+          <GameSidebar
+            messages={playingGame.chat}
+            spectators={playingGame.spectators}
+            moves={playingGame.moves}
+            mutedDeviceIds={playingGame.mutedDeviceIds}
+            isHost={isHost}
+            deviceId={deviceId}
+            onSend={sendChat}
+            onMute={mutePlayer}
+            t={t}
+          />
         </aside>
       </div>
 
