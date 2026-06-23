@@ -27,6 +27,7 @@ export async function GET(
           roomId,
           status: 'waiting',
           message: 'Waiting for opponent to join',
+          host: room.host,
         })
       }
       return NextResponse.json({ error: 'ROOM_NOT_FOUND' }, { status: 404 })

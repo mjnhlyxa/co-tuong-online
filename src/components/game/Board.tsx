@@ -91,6 +91,15 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
     return piece === `${currentTurn === 'red' ? 'r' : 'b'}-jiang`
   }
 
+  // Check if position is an initial piece position (cannon or pawn starting spots)
+  function isInitialPosition(row: number, col: number): boolean {
+    // Cannons at row 2 and 7, cols 1 and 7
+    if ((row === 2 || row === 7) && (col === 1 || col === 7)) return true
+    // Pawns at row 3 and 6, cols 0, 2, 4, 6, 8
+    if ((row === 3 || row === 6) && (col === 0 || col === 2 || col === 4 || col === 6 || col === 8)) return true
+    return false
+  }
+
   const positions: { row: number; col: number }[] = []
   for (let r = 0; r < 10; r++) for (let c = 0; c < 9; c++) positions.push({ row: r, col: c })
 
@@ -107,7 +116,7 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
         <rect width={BOARD_W} height={BOARD_H} fill="#c8a96e" rx="4" />
 
         {/* Grid lines */}
-        {Array.from({ length: 9 }, (_, r) => {
+        {Array.from({ length: 10 }, (_, r) => {
           const { x: x0, y: y0 } = toSVG(r, 0, flipped)
           const { x: x1, y: y1 } = toSVG(r, 8, flipped)
           return <line key={`hr${r}`} x1={x0} y1={y0} x2={x1} y2={y1} stroke="#8b6914" strokeWidth="1" />
@@ -160,6 +169,7 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
           const isCheck = isKingInCheck(row, col)
           const isSelected = selected?.row === row && selected?.col === col
           const isValid = validMoves.some(m => m.row === row && m.col === col)
+          const isInitPos = isInitialPosition(row, col)
 
           return (
             <g key={`hl-${row}-${col}`}>
@@ -177,6 +187,15 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
               )}
               {isValid && getPieceAt(row, col) && (
                 <circle cx={cx} cy={cy} r={22} stroke="rgba(79,156,247,0.7)" strokeWidth="2.5" fill="none" />
+              )}
+              {/* Initial position markers: small corner dots for cannon and pawn starting spots */}
+              {isInitPos && getPieceAt(row, col) && (
+                <>
+                  <circle cx={cx - 6} cy={cy - 6} r={2} fill="rgba(139,105,20,0.4)" />
+                  <circle cx={cx + 6} cy={cy - 6} r={2} fill="rgba(139,105,20,0.4)" />
+                  <circle cx={cx - 6} cy={cy + 6} r={2} fill="rgba(139,105,20,0.4)" />
+                  <circle cx={cx + 6} cy={cy + 6} r={2} fill="rgba(139,105,20,0.4)" />
+                </>
               )}
             </g>
           )
