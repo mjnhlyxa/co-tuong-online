@@ -5,6 +5,40 @@ import { Room } from '@/models/Room'
 
 export const dynamic = 'force-dynamic'
 
+// Track ALL mutable game state fields for real-time detection
+interface GameStateSignature {
+  moveCount: number
+  chatCount: number
+  spectatorCount: number
+  status: string
+  currentTurn: string
+  takebackRequest: string | null // JSON stringified for comparison
+  mutedCount: number
+  winner: string | null
+}
+
+function getGameSignature(game: {
+  moves: unknown[]
+  chat: unknown[]
+  spectators: unknown[]
+  status: string
+  currentTurn: string
+  takebackRequest: unknown | null
+  mutedDeviceIds: string[]
+  winner: string | null
+}): GameStateSignature {
+  return {
+    moveCount: game.moves.length,
+    chatCount: game.chat.length,
+    spectatorCount: game.spectators.length,
+    status: game.status,
+    currentTurn: game.currentTurn ?? '',
+    takebackRequest: game.takebackRequest ? JSON.stringify(game.takebackRequest) : null,
+    mutedCount: game.mutedDeviceIds.length,
+    winner: game.winner ?? null,
+  }
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
@@ -19,7 +53,9 @@ export async function GET(
 
   const encoder = new TextEncoder()
   let isClosed = false
-  let lastGameState: string | null = null
+
+  // Track previous signature to detect any changes
+  let lastSignature: GameStateSignature | null = null
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -35,7 +71,6 @@ export async function GET(
         try {
           await connectDB()
 
-          // Check if room/game exists
           let game = await Game.findOne({ roomId }).lean()
           let room = null
 
@@ -49,12 +84,24 @@ export async function GET(
             }
           }
 
-          const currentState = JSON.stringify(game?._id ?? room?._id ?? null)
-          if (currentState !== lastGameState) {
-            lastGameState = currentState
+          if (game) {
+            const currentSignature = getGameSignature(game)
 
-            if (game) {
-              // Determine viewer role
+            // Send update if ANY field changed
+            const hasChanges =
+              !lastSignature ||
+              currentSignature.moveCount !== lastSignature.moveCount ||
+              currentSignature.chatCount !== lastSignature.chatCount ||
+              currentSignature.spectatorCount !== lastSignature.spectatorCount ||
+              currentSignature.status !== lastSignature.status ||
+              currentSignature.currentTurn !== lastSignature.currentTurn ||
+              currentSignature.takebackRequest !== lastSignature.takebackRequest ||
+              currentSignature.mutedCount !== lastSignature.mutedCount ||
+              currentSignature.winner !== lastSignature.winner
+
+            if (hasChanges) {
+              lastSignature = currentSignature
+
               let myColor: string | null = null
               if (deviceId === game.redPlayer?.deviceId) myColor = 'red'
               else if (deviceId === game.blackPlayer?.deviceId) myColor = 'black'
@@ -106,12 +153,25 @@ export async function GET(
                 startedAt: game.startedAt,
                 finishedAt: game.finishedAt,
               })
-            } else if (room) {
+            }
+          } else if (room) {
+            // Room state (waiting for opponent)
+            if (!lastSignature || lastSignature.status !== room.status) {
+              lastSignature = {
+                moveCount: 0,
+                chatCount: 0,
+                spectatorCount: 0,
+                status: room.status,
+                currentTurn: '',
+                takebackRequest: null,
+                mutedCount: 0,
+                winner: null,
+              }
               await sendEvent({
                 type: 'room',
                 roomId: room.roomId,
                 status: room.status,
-                host: room.host,
+                host: { deviceId: room.host.deviceId, name: room.host.name, elo: room.host.elo },
                 guest: room.guest,
                 timeControl: room.timeControl,
                 allowSpectators: room.allowSpectators,
@@ -124,27 +184,24 @@ export async function GET(
         }
       }
 
-      // Send initial state immediately
+      // Initial state immediately
       await poll()
 
-      // Then poll every 500ms (much faster than SWR's 1.5s)
+      // Poll every 500ms for real-time updates
       const interval = setInterval(poll, 500)
 
-      // Send heartbeat comment every 15s to keep connection alive
+      // Keep-alive heartbeat
       const heartbeat = setInterval(() => {
         if (!isClosed) {
           controller.enqueue(encoder.encode(': heartbeat\n\n'))
         }
       }, 15000)
 
-      // Cleanup on close
       req.signal.addEventListener('abort', () => {
         isClosed = true
         clearInterval(interval)
         clearInterval(heartbeat)
-        try {
-          controller.close()
-        } catch {}
+        try { controller.close() } catch {}
       })
     }
   })
@@ -154,7 +211,7 @@ export async function GET(
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no', // Disable nginx buffering for SSE
+      'X-Accel-Buffering': 'no',
     },
   })
 }

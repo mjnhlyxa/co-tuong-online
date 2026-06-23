@@ -55,6 +55,7 @@ export interface SpectatorInfo {
 export interface GameState {
   roomId: string
   status: 'waiting' | 'playing' | 'finished'
+  host?: { deviceId: string; name: string; elo: number }
   currentTurn?: Color
   currentMoveNumber?: number
   boardState?: BoardState

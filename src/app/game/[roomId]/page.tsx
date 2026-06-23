@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import Board from '@/components/game/Board'
 import PlayerPanel from '@/components/game/PlayerPanel'
 import MoveHistory from '@/components/game/MoveHistory'
-import ChatPanel from '@/components/game/ChatPanel'
-import SpectatorList from '@/components/game/SpectatorList'
+import GameSidebar from '@/components/game/GameSidebar'
 import TakebackModal from '@/components/game/TakebackModal'
 import GameResult from '@/components/game/GameResult'
 import BottomActionBar from '@/components/game/BottomActionBar'
@@ -32,7 +31,7 @@ export default function GamePage({ params }: { params: Params }) {
 
   const [showResult, setShowResult] = useState(false)
   const [roomJoined, setRoomJoined] = useState(false)
-  const [activePanel, setActivePanel] = useState<'moves' | 'chat' | 'spectators'>('moves')
+  const [activePanel, setActivePanel] = useState<'moves' | 'sidebar'>('moves')
   const [resignConfirm, setResignConfirm] = useState(false)
   const [showTakebackRejected, setShowTakebackRejected] = useState(false)
   const prevTakebackStatusRef = useRef<string | null>(null)
@@ -60,9 +59,14 @@ export default function GamePage({ params }: { params: Params }) {
     if (needsName) setShowRegModal(true)
   }, [needsName])
 
-  // Show role selection when room is waiting and user has a name
+  // Show role selection when room is waiting, user has a name, AND is NOT the host
   useEffect(() => {
     if (!game || !playerData || game.status !== 'waiting') {
+      setShowRoleSelect(false)
+      return
+    }
+    // Host is already a player - don't show role selection
+    if (deviceId === game.host?.deviceId) {
       setShowRoleSelect(false)
       return
     }
@@ -70,7 +74,7 @@ export default function GamePage({ params }: { params: Params }) {
     if (pendingRole === null && !roomJoined) {
       setShowRoleSelect(true)
     }
-  }, [game?.status, playerData, roomJoined, pendingRole])
+  }, [game?.status, game?.host?.deviceId, deviceId, playerData, roomJoined, pendingRole])
 
   // Trigger room join based on selected role
   useEffect(() => {
@@ -368,39 +372,47 @@ export default function GamePage({ params }: { params: Params }) {
           )}
         </div>
 
-        {/* Side panel (desktop only) */}
+        {/* Side panel - Right side (desktop only): Moves + Chat/Spectators */}
         <aside className="hidden lg:flex flex-col w-80 border-l border-[var(--c-border)] bg-[var(--c-surface)]">
-          {/* Tabs */}
+          {/* Toggle between moves and sidebar */}
           <div className="flex border-b border-[var(--c-border)]">
-            {(['moves', 'chat', 'spectators'] as const).map(panel => (
-              <button
-                key={panel}
-                onClick={() => setActivePanel(panel)}
-                className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
-                  activePanel === panel
-                    ? 'text-[var(--c-accent)] border-b-2 border-[var(--c-accent)]'
-                    : 'text-[var(--c-muted)] hover:text-[var(--c-text)]'
-                }`}
-              >
-                {panel === 'moves' && `📜 ${t('moveHistory')}`}
-                {panel === 'chat' && `💬 ${t('chat')}${playingGame.chat.length > 0 ? ` (${playingGame.chat.length})` : ''}`}
-                {panel === 'spectators' && `👁 ${t('spectators')} (${playingGame.spectators.length})`}
-              </button>
-            ))}
+            <button
+              onClick={() => setActivePanel('moves')}
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                activePanel === 'moves'
+                  ? 'text-[var(--c-accent)] border-b-2 border-[var(--c-accent)]'
+                  : 'text-[var(--c-muted)] hover:text-[var(--c-text)]'
+              }`}
+            >
+              📜 {t('moveHistory')}
+            </button>
+            <button
+              onClick={() => setActivePanel('sidebar')}
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                activePanel === 'sidebar'
+                  ? 'text-[var(--c-accent)] border-b-2 border-[var(--c-accent)]'
+                  : 'text-[var(--c-muted)] hover:text-[var(--c-text)]'
+              }`}
+            >
+              💬 {t('chat')} {playingGame.chat.length > 0 && `(${playingGame.chat.length})`} · 👁 ({playingGame.spectators.length})
+            </button>
           </div>
+
+          {/* Content */}
           <div className="flex-1 overflow-y-auto min-h-0">
             {activePanel === 'moves' && <MoveHistory moves={playingGame.moves} />}
-            {activePanel === 'chat' && (
-              <ChatPanel
+            {activePanel === 'sidebar' && (
+              <GameSidebar
                 messages={playingGame.chat}
-                deviceId={deviceId}
+                spectators={playingGame.spectators}
                 mutedDeviceIds={playingGame.mutedDeviceIds}
                 isHost={isHost}
+                deviceId={deviceId}
                 onSend={sendChat}
                 onMute={mutePlayer}
+                t={t}
               />
             )}
-            {activePanel === 'spectators' && <SpectatorList spectators={playingGame.spectators} />}
           </div>
         </aside>
       </div>
