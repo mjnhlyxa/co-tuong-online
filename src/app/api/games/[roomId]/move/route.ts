@@ -34,6 +34,24 @@ export async function POST(
     if (myColor !== game.currentTurn) return NextResponse.json({ error: 'WRONG_TURN' }, { status: 400 })
     if (moveNumber !== game.currentMoveNumber) return NextResponse.json({ error: 'STALE_MOVE_NUMBER' }, { status: 409 })
 
+    // Check if OPPONENT has run out of time (before allowing this move)
+    if (game.timeControl && game.lastMoveAt) {
+      const opponentColor: 'red' | 'black' = myColor === 'red' ? 'black' : 'red'
+      const timeRemainingObj = game.timeRemaining?.toObject?.() ?? game.timeRemaining
+      const opponentTimeRemaining = timeRemainingObj[opponentColor]
+      const elapsed = Date.now() - game.lastMoveAt.getTime()
+      const actualRemaining = opponentTimeRemaining - elapsed
+      if (actualRemaining <= 0) {
+        // Opponent loses by timeout
+        await Game.findOneAndUpdate({ roomId }, {
+          $set: { winner: myColor, endReason: 'timeout', status: 'finished', finishedAt: new Date() }
+        })
+        await Room.findOneAndUpdate({ roomId }, { status: 'finished' })
+        await updateElo(game.redPlayer.deviceId, game.blackPlayer.deviceId, myColor, game)
+        return NextResponse.json({ error: 'OPPONENT_TIMEOUT' }, { status: 400 })
+      }
+    }
+
     const board = (game.boardState as unknown[][]).map(row =>
       row.map(cell => (cell ?? null) as string | null)
     )
