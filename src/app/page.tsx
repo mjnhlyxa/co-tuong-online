@@ -37,6 +37,9 @@ export default function LobbyPage() {
   const [tierFilter, setTierFilter] = useState<TierFilter>('all')
   const [leaderboard, setLeaderboard] = useState<{rank: number; name: string; elo: number; tier: string; totalGames: number; wins: number; winRate: number}[]>([])
   const [leaderboardLoading, setLeaderboardLoading] = useState(true)
+  const [leaderboardTotal, setLeaderboardTotal] = useState(0)
+  const [leaderboardHasMore, setLeaderboardHasMore] = useState(false)
+  const [leaderboardOffset, setLeaderboardOffset] = useState(0)
 
   // Registration modal state
   const [regName, setRegName] = useState('')
@@ -87,14 +90,42 @@ export default function LobbyPage() {
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        const res = await fetch('/api/leaderboard?limit=10')
+        const res = await fetch('/api/leaderboard?limit=20')
         const data = await res.json()
         setLeaderboard(data.leaderboard ?? [])
+        setLeaderboardTotal(data.total ?? 0)
+        setLeaderboardHasMore(data.hasMore ?? false)
+        setLeaderboardOffset(20)
       } catch {}
       finally { setLeaderboardLoading(false) }
     }
     fetchLeaderboard()
+    const interval = setInterval(fetchLeaderboard, 30000) // Poll every 30s
+    return () => clearInterval(interval)
   }, [])
+
+  async function loadMoreLeaderboard() {
+    try {
+      const res = await fetch(`/api/leaderboard?limit=20&offset=${leaderboardOffset}`)
+      const data = await res.json()
+      setLeaderboard(prev => [...prev, ...(data.leaderboard ?? [])])
+      setLeaderboardHasMore(data.hasMore ?? false)
+      setLeaderboardOffset(prev => prev + 20)
+    } catch {}
+  }
+
+  async function refreshLeaderboard() {
+    setLeaderboardLoading(true)
+    try {
+      const res = await fetch('/api/leaderboard?limit=20')
+      const data = await res.json()
+      setLeaderboard(data.leaderboard ?? [])
+      setLeaderboardTotal(data.total ?? 0)
+      setLeaderboardHasMore(data.hasMore ?? false)
+      setLeaderboardOffset(20)
+    } catch {}
+    finally { setLeaderboardLoading(false) }
+  }
 
   async function handleRegister() {
     const name = regName.trim()
@@ -292,54 +323,82 @@ export default function LobbyPage() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[var(--c-text)] font-semibold flex items-center gap-2">
             🏆 {t('leaderboard') || 'Bảng xếp hạng'}
+            {leaderboardTotal > 0 && (
+              <span className="text-xs text-[var(--c-muted)] font-normal">({leaderboardTotal} players)</span>
+            )}
           </h3>
+          <button
+            onClick={refreshLeaderboard}
+            className="text-xs text-[var(--c-muted)] hover:text-[var(--c-text)] flex items-center gap-1 transition-colors cursor-pointer"
+            disabled={leaderboardLoading}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={leaderboardLoading ? 'animate-spin' : ''}>
+              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+            {leaderboardLoading ? t('loading') : t('reload')}
+          </button>
         </div>
 
-        {leaderboardLoading ? (
+        {leaderboardLoading && leaderboard.length === 0 ? (
           <div className="text-center text-[var(--c-muted)] py-8">{t('loading')}</div>
         ) : leaderboard.length === 0 ? (
           <div className="text-center text-[var(--c-muted)] py-8 text-sm">{t('noLeaderboardYet') || 'Chưa có dữ liệu bảng xếp hạng'}</div>
         ) : (
-          <div className="space-y-1">
-            {leaderboard.map((entry, idx) => {
-              const isTop3 = entry.rank <= 3
-              const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-400']
-              const medalBg = ['bg-yellow-400/10', 'bg-gray-300/10', 'bg-amber-400/10']
-              return (
-                <div
-                  key={entry.name}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
-                    isTop3 ? `${medalBg[idx]} border border-${medalColors[idx]}/30` : 'hover:bg-[var(--c-elevated)]'
-                  }`}
-                >
-                  {/* Rank */}
-                  <div className={`w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm ${
-                    isTop3 ? `bg-${medalColors[idx]}/20 text-${medalColors[idx]}` : 'bg-[var(--c-elevated)] text-[var(--c-muted)]'
-                  }`}>
-                    {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank}
-                  </div>
-                  {/* Name */}
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium truncate ${isTop3 ? 'text-[var(--c-text)]' : 'text-[var(--c-text)]'}`}>
-                      {entry.name}
+          <>
+            <div className="space-y-1">
+              {leaderboard.map((entry) => {
+                const isTop3 = entry.rank <= 3
+                return (
+                  <div
+                    key={`${entry.name}-${entry.rank}`}
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
+                      isTop3 ? (
+                        entry.rank === 1 ? 'bg-yellow-400/10 border border-yellow-400/30' :
+                        entry.rank === 2 ? 'bg-gray-300/10 border border-gray-300/30' :
+                        'bg-amber-400/10 border border-amber-400/30'
+                      ) : 'hover:bg-[var(--c-elevated)]'
+                    }`}
+                  >
+                    {/* Rank */}
+                    <div className={`w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm ${
+                      entry.rank === 1 ? 'bg-yellow-400/20 text-yellow-400' :
+                      entry.rank === 2 ? 'bg-gray-300/20 text-gray-300' :
+                      entry.rank === 3 ? 'bg-amber-400/20 text-amber-400' :
+                      'bg-[var(--c-elevated)] text-[var(--c-muted)]'
+                    }`}>
+                      {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank}
+                    </div>
+                    {/* Name */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate text-[var(--c-text)]">
+                        {entry.name}
+                      </div>
+                    </div>
+                    {/* Stats */}
+                    <div className="flex items-center gap-3 text-xs text-[var(--c-muted)]">
+                      <div className="text-right">
+                        <div className="font-medium text-[var(--c-accent)]">{entry.elo}</div>
+                        <div className="text-[10px]">ELO</div>
+                      </div>
+                      <Badge tier={entry.tier as 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'} elo={entry.elo} />
+                      <div className="text-right hidden sm:block">
+                        <div>{entry.wins}W / {entry.totalGames}G</div>
+                        <div className="text-[10px]">{entry.winRate}% WR</div>
+                      </div>
                     </div>
                   </div>
-                  {/* Stats */}
-                  <div className="flex items-center gap-3 text-xs text-[var(--c-muted)]">
-                    <div className="text-right">
-                      <div className="font-medium text-[var(--c-accent)]">{entry.elo}</div>
-                      <div className="text-[10px]">ELO</div>
-                    </div>
-                    <Badge tier={entry.tier as 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'} elo={entry.elo} />
-                    <div className="text-right hidden sm:block">
-                      <div>{entry.wins}W / {entry.totalGames}G</div>
-                      <div className="text-[10px]">{entry.winRate}% WR</div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+            {leaderboardHasMore && (
+              <button
+                onClick={loadMoreLeaderboard}
+                className="w-full mt-3 py-2 text-xs text-[var(--c-muted)] hover:text-[var(--c-text)] border border-[var(--c-border)] hover:border-[var(--c-accent)]/50 rounded-lg transition-colors cursor-pointer"
+              >
+                Load more ({leaderboardTotal - leaderboard.length} remaining)
+              </button>
+            )}
+          </>
         )}
       </div>
 

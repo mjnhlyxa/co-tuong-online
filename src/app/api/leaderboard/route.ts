@@ -7,16 +7,21 @@ export async function GET(req: NextRequest) {
     await connectDB()
 
     const { searchParams } = new URL(req.url)
-    const limit = Math.min(parseInt(searchParams.get('limit') ?? '10'), 50)
+    const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 50)
+    const offset = Math.max(parseInt(searchParams.get('offset') ?? '0'), 0)
 
-    const players = await Player.find({})
-      .sort({ 'ranking.elo': -1 })
-      .limit(limit)
-      .select('name ranking.elo ranking.tier stats.totalGames stats.wins')
-      .lean()
+    const [players, total] = await Promise.all([
+      Player.find({})
+        .sort({ 'ranking.elo': -1 })
+        .skip(offset)
+        .limit(limit)
+        .select('name ranking.elo ranking.tier stats.totalGames stats.wins')
+        .lean(),
+      Player.countDocuments({}),
+    ])
 
     const leaderboard = players.map((p, idx) => ({
-      rank: idx + 1,
+      rank: offset + idx + 1,
       name: p.name,
       elo: p.ranking.elo,
       tier: p.ranking.tier,
@@ -27,7 +32,11 @@ export async function GET(req: NextRequest) {
         : 0,
     }))
 
-    return NextResponse.json({ leaderboard })
+    return NextResponse.json({
+      leaderboard,
+      total,
+      hasMore: offset + leaderboard.length < total,
+    })
   } catch (err) {
     console.error('GET /api/leaderboard error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
