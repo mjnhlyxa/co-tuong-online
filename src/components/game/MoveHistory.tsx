@@ -60,7 +60,7 @@ export default function MoveHistory({ moves }: MoveHistoryProps) {
       {hasMore && !showAll && (
         <button
           onClick={() => setShowAll(true)}
-          className="text-xs text-[var(--c-accent)] hover:text-[var(--c-accent-h)] text-center py-1 border-b border-[var(--c-border)] transition-colors shrink-0"
+          className="text-xs text-[var(--c-accent)] hover:text-[var(--c-accent-h)] text-center py-1 border-b border-[var(--c-border)] transition-colors shrink-0 cursor-pointer"
         >
           {t('showEarlierMoves') ?? `Hiện ${moves.length - VISIBLE_WINDOW} nước trước`}
         </button>
@@ -68,7 +68,7 @@ export default function MoveHistory({ moves }: MoveHistoryProps) {
       {showAll && hasMore && (
         <button
           onClick={() => setShowAll(false)}
-          className="text-xs text-[var(--c-muted)] hover:text-[var(--c-text)] text-center py-1 border-b border-[var(--c-border)] transition-colors shrink-0"
+          className="text-xs text-[var(--c-muted)] hover:text-[var(--c-text)] text-center py-1 border-b border-[var(--c-border)] transition-colors shrink-0 cursor-pointer"
         >
           {t('showRecentMoves') ?? 'Cuộn xuống mới nhất'}
         </button>

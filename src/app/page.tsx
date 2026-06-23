@@ -198,7 +198,7 @@ export default function LobbyPage() {
             {!roomsLoading && (
               <div className="inline-flex items-center gap-1.5 bg-[var(--c-accent-bg)] border border-[var(--c-accent)]/30 text-[var(--c-accent)] text-xs font-medium px-3 py-1 rounded-full mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--c-accent)] animate-pulse inline-block" />
-                {rooms.length > 0 ? `${rooms.length} phòng đang chờ` : 'Đang tải phòng...'}
+                {rooms.length > 0 ? `${rooms.length} phòng đang chờ` : 'Không có phòng đang chờ'}
               </div>
             )}
             <h2 className="text-3xl sm:text-4xl font-bold text-[var(--c-text)] mb-3 leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
@@ -237,7 +237,7 @@ export default function LobbyPage() {
               <span className="text-xs bg-[var(--c-elevated)] text-[var(--c-muted)] px-2 py-0.5 rounded-full font-medium">{rooms.length}</span>
             )}
           </div>
-          <button onClick={fetchRooms} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-xs transition-colors flex items-center gap-1">
+          <button onClick={fetchRooms} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-xs transition-colors flex items-center gap-1 cursor-pointer">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
             {t('reload')}
           </button>

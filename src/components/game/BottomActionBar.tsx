@@ -51,7 +51,7 @@ export default function BottomActionBar({
             <span className="font-medium text-[var(--c-text)] text-sm">
               {tabs.find(t => t.id === drawer)?.label}
             </span>
-            <button onClick={() => setDrawer(null)} className="text-[var(--c-muted)] hover:text-[var(--c-text)]">✕</button>
+            <button onClick={() => setDrawer(null)} className="text-[var(--c-muted)] hover:text-[var(--c-text)] cursor-pointer">✕</button>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             {drawer === 'moves' && <MoveHistory moves={game.moves ?? []} />}

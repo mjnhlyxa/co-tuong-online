@@ -27,7 +27,7 @@ function Section({ title, icon, count, children, defaultOpen = true }: {
     <div className="border-b border-[var(--c-border)] last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-[var(--c-elevated)] transition-colors"
+        className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-[var(--c-elevated)] transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2">
           <span className="text-sm">{icon}</span>
@@ -105,7 +105,7 @@ function ChatSection({ messages, deviceId, mutedDeviceIds, isHost, onSend, onMut
                 {isHost && !isOwn && (
                   <button
                     onClick={() => onMute(msg.deviceId, !mutedDeviceIds.includes(msg.deviceId))}
-                    className="ml-auto opacity-0 group-hover:opacity-100 text-[10px] text-[var(--c-dim)] hover:text-[var(--c-warning)] transition-all"
+                    className="ml-auto opacity-0 group-hover:opacity-100 text-[10px] text-[var(--c-dim)] hover:text-[var(--c-warning)] transition-all cursor-pointer"
                   >
                     {mutedDeviceIds.includes(msg.deviceId) ? '🔇' : '🔕'}
                   </button>

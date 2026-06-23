@@ -167,7 +167,7 @@ export default function GamePage({ params }: { params: Params }) {
     return (
       <div className="min-h-screen bg-[var(--c-bg)] flex flex-col">
         <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)]/95 backdrop-blur">
-          <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-sm flex items-center gap-1.5 transition-colors">
+          <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-sm flex items-center gap-1.5 transition-colors cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path d="M12.172 7H4a1 1 0 000 2h8.172l-2.122 2.121a1 1 0 001.414 1.415l3.243-3.243a1 1 0 000-1.414L13.464 4.636a1 1 0 00-1.414 1.414L12.172 7z" transform="rotate(180 8 8)"/>
             </svg>
@@ -215,7 +215,7 @@ export default function GamePage({ params }: { params: Params }) {
     return (
       <div className="min-h-screen bg-[var(--c-bg)] flex flex-col">
         <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)]/95 backdrop-blur">
-          <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-sm flex items-center gap-1.5 transition-colors">
+          <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-sm flex items-center gap-1.5 transition-colors cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path d="M12.172 7H4a1 1 0 000 2h8.172l-2.122 2.121a1 1 0 001.414 1.415l3.243-3.243a1 1 0 000-1.414L13.464 4.636a1 1 0 00-1.414 1.414L12.172 7z" transform="rotate(180 8 8)"/>
             </svg>
@@ -252,14 +252,14 @@ export default function GamePage({ params }: { params: Params }) {
             <p className="text-[var(--c-muted)] text-sm">{t('joinAsDesc') || 'Bạn muốn tham gia với tư cách nào?'}</p>
             <button
               onClick={() => handleSelectRole('player')}
-              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-accent)] bg-[var(--c-accent-bg)] text-left hover:bg-[var(--c-accent)]/10 transition-colors"
+              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-accent)] bg-[var(--c-accent-bg)] text-left hover:bg-[var(--c-accent)]/10 transition-colors cursor-pointer"
             >
               <div className="text-[var(--c-accent)] font-semibold text-base">🎮 {t('playAsOpponent') || 'Chơi như đối thủ'}</div>
               <div className="text-[var(--c-muted)] text-xs mt-1">{t('playAsOpponentDesc') || 'Vào chơi cờ với chủ phòng'}</div>
             </button>
             <button
               onClick={() => handleSelectRole('spectator')}
-              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-border)] text-left hover:border-[var(--c-muted)] transition-colors"
+              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-border)] text-left hover:border-[var(--c-muted)] transition-colors cursor-pointer"
             >
               <div className="text-[var(--c-text)] font-semibold text-base">👁 {t('watchAsSpectator') || 'Xem như khán giả'}</div>
               <div className="text-[var(--c-muted)] text-xs mt-1">{t('watchAsSpectatorDesc') || 'Theo dõi ván đấu mà không chơi'}</div>
@@ -309,7 +309,7 @@ export default function GamePage({ params }: { params: Params }) {
     <div className="min-h-screen bg-[var(--c-bg)] flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--c-border)] bg-[var(--c-surface)]/95 backdrop-blur">
-        <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] flex items-center gap-1.5 text-sm transition-colors">
+        <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] flex items-center gap-1.5 text-sm transition-colors cursor-pointer">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
             <path d="M3.828 7H12a1 1 0 110 2H3.828l2.122 2.121a1 1 0 11-1.414 1.415L1.293 9.293a1 1 0 010-1.414l3.243-3.243a1 1 0 011.414 1.414L3.828 7z" />
           </svg>
@@ -378,7 +378,7 @@ export default function GamePage({ params }: { params: Params }) {
           <div className="flex border-b border-[var(--c-border)]">
             <button
               onClick={() => setActivePanel('moves')}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
                 activePanel === 'moves'
                   ? 'text-[var(--c-accent)] border-b-2 border-[var(--c-accent)]'
                   : 'text-[var(--c-muted)] hover:text-[var(--c-text)]'
@@ -388,7 +388,7 @@ export default function GamePage({ params }: { params: Params }) {
             </button>
             <button
               onClick={() => setActivePanel('sidebar')}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
                 activePanel === 'sidebar'
                   ? 'text-[var(--c-accent)] border-b-2 border-[var(--c-accent)]'
                   : 'text-[var(--c-muted)] hover:text-[var(--c-text)]'
