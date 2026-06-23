@@ -238,7 +238,7 @@ export default function LobbyPage() {
             <p className="text-[var(--c-muted)]">{t('noLoginRequired')}</p>
             <div className="flex gap-3 mt-6 justify-center sm:justify-start flex-wrap">
               <Button variant="primary" size="lg" onClick={() => setShowCreate(true)} disabled={!player}>
-                + {t('createRoom')}
+                {t('createRoom')}
               </Button>
               <Button variant="secondary" size="lg" onClick={() => setShowJoin(true)} disabled={!player}>
                 {t('joinByCode')}

@@ -14,7 +14,7 @@ import Modal from '@/components/ui/Modal'
 import LanguageSelector from '@/components/ui/LanguageSelector'
 import ThemePicker from '@/components/ui/ThemePicker'
 import CopyButton from '@/components/ui/CopyButton'
-import { useGameSSE } from '@/hooks/useGameSSE'
+import { useGameSWR } from '@/hooks/useGameSWR'
 import { usePlayer } from '@/hooks/usePlayer'
 import { useI18n } from '@/hooks/useI18n'
 import { isInCheck } from '@/lib/xiangqi/rules'
@@ -27,7 +27,7 @@ export default function GamePage({ params }: { params: Params }) {
   const router = useRouter()
   const { deviceId, player: playerData, loading: playerLoading, needsName, register } = usePlayer()
   const { language, setLanguage, t } = useI18n()
-  const { game, loading, makeMove, resign, sendChat, requestTakeback, respondTakeback, mutePlayer } = useGameSSE(roomId, deviceId)
+  const { game, loading, makeMove, resign, sendChat, requestTakeback, respondTakeback, mutePlayer } = useGameSWR(roomId, deviceId)
 
   const [showResult, setShowResult] = useState(false)
   const [roomJoined, setRoomJoined] = useState(false)
