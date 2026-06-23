@@ -36,9 +36,9 @@ export default function BottomActionBar({
   }
 
   const tabs: { id: Drawer; label: string; icon: string; badge?: number }[] = [
-    { id: 'moves', label: t('moveHistory'), icon: '📜', badge: game.moves.length },
-    { id: 'chat', label: t('chat'), icon: '💬', badge: game.chat.length > 0 ? game.chat.length : undefined },
-    { id: 'spectators', label: t('spectatorsShort'), icon: '👁', badge: game.spectators.length > 0 ? game.spectators.length : undefined },
+    { id: 'moves', label: t('moveHistory'), icon: '📜', badge: game.moves?.length ?? 0 },
+    { id: 'chat', label: t('chat'), icon: '💬', badge: (game.chat?.length ?? 0) > 0 ? game.chat?.length : undefined },
+    { id: 'spectators', label: t('spectatorsShort'), icon: '👁', badge: (game.spectators?.length ?? 0) > 0 ? game.spectators?.length : undefined },
     { id: 'more', label: t('moreBtn'), icon: '⋯' },
   ]
 
@@ -54,18 +54,18 @@ export default function BottomActionBar({
             <button onClick={() => setDrawer(null)} className="text-[var(--c-muted)] hover:text-[var(--c-text)]">✕</button>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
-            {drawer === 'moves' && <MoveHistory moves={game.moves} />}
+            {drawer === 'moves' && <MoveHistory moves={game.moves ?? []} />}
             {drawer === 'chat' && (
               <ChatPanel
-                messages={game.chat}
+                messages={game.chat ?? []}
                 deviceId={deviceId}
-                mutedDeviceIds={game.mutedDeviceIds}
+                mutedDeviceIds={game.mutedDeviceIds ?? []}
                 isHost={isHost}
                 onSend={onSendChat}
                 onMute={onMute}
               />
             )}
-            {drawer === 'spectators' && <SpectatorList spectators={game.spectators} />}
+            {drawer === 'spectators' && <SpectatorList spectators={game.spectators ?? []} />}
             {drawer === 'more' && (
               <div className="p-4 space-y-3">
                 {isPlayer && game.status === 'playing' && (

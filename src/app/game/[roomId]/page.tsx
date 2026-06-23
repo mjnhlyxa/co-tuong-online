@@ -11,23 +11,24 @@ import TakebackModal from '@/components/game/TakebackModal'
 import GameResult from '@/components/game/GameResult'
 import BottomActionBar from '@/components/game/BottomActionBar'
 import Button from '@/components/ui/Button'
+import Modal from '@/components/ui/Modal'
 import LanguageSelector from '@/components/ui/LanguageSelector'
 import ThemePicker from '@/components/ui/ThemePicker'
 import CopyButton from '@/components/ui/CopyButton'
-import { useGame } from '@/hooks/useGame'
+import { useGameSSE } from '@/hooks/useGameSSE'
 import { usePlayer } from '@/hooks/usePlayer'
 import { useI18n } from '@/hooks/useI18n'
 import { isInCheck } from '@/lib/xiangqi/rules'
-import type { Color } from '@/types'
+import type { Color, Language } from '@/types'
 
 type Params = Promise<{ roomId: string }>
 
 export default function GamePage({ params }: { params: Params }) {
   const { roomId } = use(params)
   const router = useRouter()
-  const { deviceId, loading: playerLoading } = usePlayer()
+  const { deviceId, player: playerData, loading: playerLoading, needsName, register } = usePlayer()
   const { language, setLanguage, t } = useI18n()
-  const { game, loading, makeMove, resign, sendChat, requestTakeback, respondTakeback, mutePlayer } = useGame(roomId, deviceId)
+  const { game, loading, makeMove, resign, sendChat, requestTakeback, respondTakeback, mutePlayer } = useGameSSE(roomId, deviceId)
 
   const [showResult, setShowResult] = useState(false)
   const [roomJoined, setRoomJoined] = useState(false)
@@ -36,25 +37,71 @@ export default function GamePage({ params }: { params: Params }) {
   const [showTakebackRejected, setShowTakebackRejected] = useState(false)
   const prevTakebackStatusRef = useRef<string | null>(null)
 
-  // Trigger room join (auto-joins as guest if waiting)
-  useEffect(() => {
-    if (!deviceId || roomJoined) return
-    setRoomJoined(true)
-    fetch(`/api/rooms/${roomId}?deviceId=${deviceId}`).catch(() => {})
-  }, [deviceId, roomId, roomJoined])
+  // Registration modal state (for name input on game page)
+  const [showRegModal, setShowRegModal] = useState(false)
+  const [regName, setRegName] = useState('')
+  const [regLang, setRegLang] = useState<Language>('vi')
+  const [regError, setRegError] = useState('')
+  const [regLoading, setRegLoading] = useState(false)
 
-  // Join as spectator if not a player
+  // Role selection modal state (play vs watch)
+  const [showRoleSelect, setShowRoleSelect] = useState(false)
+  const [roleSelectLoading, setRoleSelectLoading] = useState(false)
+  const [pendingRole, setPendingRole] = useState<'player' | 'spectator' | null>(null)
+
+  // Sync regLang to detected language
   useEffect(() => {
-    if (!deviceId || !game) return
-    const isPlayer = game.myColor !== null
-    if (!isPlayer && game.allowSpectators) {
+    if (!showRegModal) return
+    setRegLang(language)
+  }, [showRegModal, language])
+
+  // Show registration modal when needsName becomes true
+  useEffect(() => {
+    if (needsName) setShowRegModal(true)
+  }, [needsName])
+
+  // Show role selection when room is waiting and user has a name
+  useEffect(() => {
+    if (!game || !playerData || game.status !== 'waiting') {
+      setShowRoleSelect(false)
+      return
+    }
+    // Only show role select if we haven't selected a role yet
+    if (pendingRole === null && !roomJoined) {
+      setShowRoleSelect(true)
+    }
+  }, [game?.status, playerData, roomJoined, pendingRole])
+
+  // Trigger room join based on selected role
+  useEffect(() => {
+    if (!deviceId || !playerData || roomJoined || !pendingRole) return
+    setRoomJoined(true)
+
+    if (pendingRole === 'spectator') {
+      // Join as spectator - just call spectate API
       fetch(`/api/games/${roomId}/spectate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId }),
+        body: JSON.stringify({ deviceId, name: playerData.name }),
+      }).catch(() => {})
+    } else {
+      // Join as player - call rooms API to join as guest
+      fetch(`/api/rooms/${roomId}?deviceId=${deviceId}`).catch(() => {})
+    }
+  }, [deviceId, playerData, roomId, roomJoined, pendingRole])
+
+  // Join as spectator if playing and not a player
+  useEffect(() => {
+    if (!deviceId || !game || pendingRole === 'spectator') return
+    const isPlayer = game.myColor !== null
+    if (!isPlayer && game.allowSpectators && game.status === 'playing') {
+      fetch(`/api/games/${roomId}/spectate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, name: playerData?.name }),
       }).catch(() => {})
     }
-  }, [deviceId, game?.allowSpectators, game?.myColor, roomId])
+  }, [deviceId, game?.allowSpectators, game?.myColor, game?.status, roomId, playerData?.name, pendingRole])
 
   useEffect(() => {
     if (game?.status === 'finished') {
@@ -77,6 +124,32 @@ export default function GamePage({ params }: { params: Params }) {
     prevTakebackStatusRef.current = currentStatus
   }, [game?.takebackRequest?.status, game?.takebackRequest?.fromColor, game?.myColor])
 
+  // ---- Registration handlers ----
+  async function handleRegister() {
+    const name = regName.trim()
+    if (name.length < 2 || name.length > 16) {
+      setRegError(t('nameError') || 'Tên phải từ 2-16 ký tự')
+      return
+    }
+    setRegLoading(true)
+    setRegError('')
+    try {
+      await register(name, regLang)
+      setLanguage(regLang)
+      setShowRegModal(false)
+    } catch (e: unknown) {
+      setRegError(e instanceof Error ? e.message : (t('genericError') || 'Có lỗi xảy ra'))
+    } finally {
+      setRegLoading(false)
+    }
+  }
+
+  // ---- Role selection handlers ----
+  function handleSelectRole(role: 'player' | 'spectator') {
+    setPendingRole(role)
+    setShowRoleSelect(false)
+  }
+
   if (playerLoading || (loading && !game)) {
     return (
       <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center">
@@ -85,8 +158,56 @@ export default function GamePage({ params }: { params: Params }) {
     )
   }
 
-  // Game not started yet — host is waiting for opponent
-  if (!game) {
+  // Registration modal (shown when user has no name)
+  if (showRegModal || needsName) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)]/95 backdrop-blur">
+          <button onClick={() => router.push('/')} className="text-[var(--c-muted)] hover:text-[var(--c-text)] text-sm flex items-center gap-1.5 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M12.172 7H4a1 1 0 000 2h8.172l-2.122 2.121a1 1 0 001.414 1.415l3.243-3.243a1 1 0 000-1.414L13.464 4.636a1 1 0 00-1.414 1.414L12.172 7z" transform="rotate(180 8 8)"/>
+            </svg>
+            {t('backToLobby').replace('🏠 ', '')}
+          </button>
+          <div className="flex items-center gap-2">
+            <ThemePicker />
+            <LanguageSelector value={language} onChange={setLanguage} compact />
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="w-full max-w-sm bg-[var(--c-surface)] border border-[var(--c-border)] rounded-2xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-[var(--c-text)] mb-1">{t('welcome')}</h2>
+            <p className="text-[var(--c-muted)] text-sm mb-4">{t('registerHint')}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-[var(--c-muted)] mb-1">{t('displayName')}</label>
+                <input
+                  value={regName}
+                  onChange={e => { setRegName(e.target.value); setRegError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handleRegister()}
+                  placeholder={t('namePlaceholder')}
+                  maxLength={16}
+                  autoFocus
+                  className="w-full bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] placeholder-[var(--c-dim)] focus:outline-none focus:border-[var(--c-accent)] text-sm"
+                />
+                {regError && <p className="text-[var(--c-danger)] text-xs mt-1">{regError}</p>}
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--c-muted)] mb-1">{t('chooseLanguage')}</label>
+                <LanguageSelector value={regLang} onChange={setRegLang} />
+              </div>
+              <Button variant="primary" className="w-full" loading={regLoading} disabled={regName.trim().length < 2} onClick={handleRegister}>
+                {t('startPlaying')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Game not started yet — show role selection or waiting
+  if (!game || game.status === 'waiting') {
     return (
       <div className="min-h-screen bg-[var(--c-bg)] flex flex-col">
         <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)]/95 backdrop-blur">
@@ -120,24 +241,49 @@ export default function GamePage({ params }: { params: Params }) {
           )}
           <Button variant="secondary" onClick={() => router.push('/')}>{t('backToLobby').replace('🏠 ', '')}</Button>
         </div>
+
+        {/* Role selection modal */}
+        <Modal open={showRoleSelect} onClose={() => { setShowRoleSelect(false); router.push('/') }} title={t('joinAs') || 'Tham gia với tư cách'}>
+          <div className="space-y-3">
+            <p className="text-[var(--c-muted)] text-sm">{t('joinAsDesc') || 'Bạn muốn tham gia với tư cách nào?'}</p>
+            <button
+              onClick={() => handleSelectRole('player')}
+              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-accent)] bg-[var(--c-accent-bg)] text-left hover:bg-[var(--c-accent)]/10 transition-colors"
+            >
+              <div className="text-[var(--c-accent)] font-semibold text-base">🎮 {t('playAsOpponent') || 'Chơi như đối thủ'}</div>
+              <div className="text-[var(--c-muted)] text-xs mt-1">{t('playAsOpponentDesc') || 'Vào chơi cờ với chủ phòng'}</div>
+            </button>
+            <button
+              onClick={() => handleSelectRole('spectator')}
+              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-border)] text-left hover:border-[var(--c-muted)] transition-colors"
+            >
+              <div className="text-[var(--c-text)] font-semibold text-base">👁 {t('watchAsSpectator') || 'Xem như khán giả'}</div>
+              <div className="text-[var(--c-muted)] text-xs mt-1">{t('watchAsSpectatorDesc') || 'Theo dõi ván đấu mà không chơi'}</div>
+            </button>
+          </div>
+        </Modal>
       </div>
     )
   }
 
-  const myColor = game.myColor
+  // At this point, game is in 'playing' or 'finished' state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const playingGame = game as any
+
+  const myColor = playingGame.myColor
   const isPlayer = myColor !== null
   const isHost = myColor === 'red'
   const topColor: Color = myColor === 'black' ? 'red' : 'black'
   const bottomColor: Color = myColor === 'black' ? 'black' : 'red'
 
-  const boardInCheck = isInCheck(game.boardState, game.currentTurn)
+  const boardInCheck = isInCheck(playingGame.boardState, playingGame.currentTurn)
 
-  const takebacksUsedByMe = myColor ? game.takebacksUsed[myColor] : 0
+  const takebacksUsedByMe = myColor ? playingGame.takebacksUsed[myColor] : 0
   const canTakeback = isPlayer &&
-    game.currentTurn !== myColor &&
-    !game.takebackRequest &&
+    playingGame.currentTurn !== myColor &&
+    !playingGame.takebackRequest &&
     takebacksUsedByMe < 3 &&
-    game.currentMoveNumber > 0
+    playingGame.currentMoveNumber > 0
 
   async function handleMove(from: { row: number; col: number }, to: { row: number; col: number }) {
     try {
@@ -181,31 +327,31 @@ export default function GamePage({ params }: { params: Params }) {
         <div className="flex flex-col flex-1 items-center px-2 py-1 sm:py-3 gap-1 sm:gap-2 overflow-auto">
           {/* Opponent panel (top) */}
           <div className="w-full max-w-[520px]">
-            <PlayerPanel game={game} color={topColor} position="top" />
+            <PlayerPanel game={playingGame} color={topColor} position="top" isMyColor={false} />
           </div>
 
           {/* Board */}
           <div className="flex-shrink-0">
             <Board
-              board={game.boardState}
+              board={playingGame.boardState}
               myColor={myColor}
-              currentTurn={game.currentTurn}
-              lastMove={game.moves[game.moves.length - 1] ?? null}
+              currentTurn={playingGame.currentTurn}
+              lastMove={playingGame.moves[playingGame.moves.length - 1] ?? null}
               isInCheck={boardInCheck}
-              disabled={!isPlayer || game.currentTurn !== myColor || game.status !== 'playing'}
+              disabled={!isPlayer || playingGame.currentTurn !== myColor || playingGame.status !== 'playing'}
               onMove={handleMove}
             />
           </div>
 
           {/* My panel (bottom) */}
           <div className="w-full max-w-[520px]">
-            <PlayerPanel game={game} color={bottomColor} position="bottom" />
+            <PlayerPanel game={playingGame} color={bottomColor} position="bottom" isMyColor={!!myColor} />
           </div>
 
           {/* Action buttons (desktop/tablet, hidden on mobile) */}
-          {isPlayer && game.status === 'playing' && (
+          {isPlayer && playingGame.status === 'playing' && (
             <div className="hidden sm:flex items-center gap-2 mt-1">
-              {game.allowTakeback && canTakeback && (
+              {playingGame.allowTakeback && canTakeback && (
                 <Button variant="secondary" size="sm" onClick={requestTakeback}>
                   ↩ {t('requestTakeback')} ({3 - takebacksUsedByMe} {t('takebacksLeft')})
                 </Button>
@@ -237,24 +383,24 @@ export default function GamePage({ params }: { params: Params }) {
                 }`}
               >
                 {panel === 'moves' && `📜 ${t('moveHistory')}`}
-                {panel === 'chat' && `💬 ${t('chat')}${game.chat.length > 0 ? ` (${game.chat.length})` : ''}`}
-                {panel === 'spectators' && `👁 ${t('spectators')} (${game.spectators.length})`}
+                {panel === 'chat' && `💬 ${t('chat')}${playingGame.chat.length > 0 ? ` (${playingGame.chat.length})` : ''}`}
+                {panel === 'spectators' && `👁 ${t('spectators')} (${playingGame.spectators.length})`}
               </button>
             ))}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
-            {activePanel === 'moves' && <MoveHistory moves={game.moves} />}
+            {activePanel === 'moves' && <MoveHistory moves={playingGame.moves} />}
             {activePanel === 'chat' && (
               <ChatPanel
-                messages={game.chat}
+                messages={playingGame.chat}
                 deviceId={deviceId}
-                mutedDeviceIds={game.mutedDeviceIds}
+                mutedDeviceIds={playingGame.mutedDeviceIds}
                 isHost={isHost}
                 onSend={sendChat}
                 onMute={mutePlayer}
               />
             )}
-            {activePanel === 'spectators' && <SpectatorList spectators={game.spectators} />}
+            {activePanel === 'spectators' && <SpectatorList spectators={playingGame.spectators} />}
           </div>
         </aside>
       </div>
@@ -262,7 +408,7 @@ export default function GamePage({ params }: { params: Params }) {
       {/* Mobile bottom bar */}
       <div className="lg:hidden pb-16">
         <BottomActionBar
-          game={game}
+          game={playingGame}
           myColor={myColor}
           deviceId={deviceId}
           onSendChat={sendChat}
@@ -283,7 +429,7 @@ export default function GamePage({ params }: { params: Params }) {
 
       {/* Takeback modal */}
       <TakebackModal
-        request={game.takebackRequest}
+        request={playingGame.takebackRequest}
         myColor={myColor}
         onAccept={() => respondTakeback(true)}
         onReject={() => respondTakeback(false)}
@@ -292,7 +438,7 @@ export default function GamePage({ params }: { params: Params }) {
       {/* Game result */}
       {showResult && (
         <GameResult
-          game={game}
+          game={playingGame}
           myColor={myColor}
           onClose={() => { setShowResult(false); router.push('/') }}
         />

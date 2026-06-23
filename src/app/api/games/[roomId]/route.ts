@@ -17,7 +17,19 @@ export async function GET(
     const deviceId = searchParams.get('deviceId')
 
     let game = await Game.findOne({ roomId })
-    if (!game) return NextResponse.json({ error: 'ROOM_NOT_FOUND' }, { status: 404 })
+    if (!game) {
+      // Check if room exists but game hasn't been created yet (waiting for opponent)
+      const { Room } = await import('@/models/Room')
+      const room = await Room.findOne({ roomId }).lean()
+      if (room) {
+        return NextResponse.json({
+          roomId,
+          status: 'waiting',
+          message: 'Waiting for opponent to join',
+        })
+      }
+      return NextResponse.json({ error: 'ROOM_NOT_FOUND' }, { status: 404 })
+    }
 
     // Abandoned detection: if playing and current player hasn't sent heartbeat in 30s
     if (game.status === 'playing') {

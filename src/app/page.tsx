@@ -23,6 +23,7 @@ export default function LobbyPage() {
 
   const timeOptions = [
     { label: `10 ${t('minutes')}`, value: 600000 },
+    { label: `15 ${t('minutes')}`, value: 900000 },
     { label: `20 ${t('minutes')}`, value: 1200000 },
     { label: `30 ${t('minutes')}`, value: 1800000 },
     { label: `40 ${t('minutes')}`, value: 2400000 },
@@ -34,6 +35,8 @@ export default function LobbyPage() {
   const [rooms, setRooms] = useState<RoomInfo[]>([])
   const [roomsLoading, setRoomsLoading] = useState(true)
   const [tierFilter, setTierFilter] = useState<TierFilter>('all')
+  const [leaderboard, setLeaderboard] = useState<{rank: number; name: string; elo: number; tier: string; totalGames: number; wins: number; winRate: number}[]>([])
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true)
 
   // Registration modal state
   const [regName, setRegName] = useState('')
@@ -80,6 +83,18 @@ export default function LobbyPage() {
     } catch {}
     finally { setRoomsLoading(false) }
   }
+
+  useEffect(() => {
+    async function fetchLeaderboard() {
+      try {
+        const res = await fetch('/api/leaderboard?limit=10')
+        const data = await res.json()
+        setLeaderboard(data.leaderboard ?? [])
+      } catch {}
+      finally { setLeaderboardLoading(false) }
+    }
+    fetchLeaderboard()
+  }, [])
 
   async function handleRegister() {
     const name = regName.trim()
@@ -268,6 +283,62 @@ export default function LobbyPage() {
             {rooms.map(room => (
               <RoomCard key={room.roomId} room={room} onClick={() => handleJoinRoom(room)} />
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Leaderboard */}
+      <div className="max-w-5xl mx-auto w-full px-4 py-6 border-t border-[var(--c-border)]">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[var(--c-text)] font-semibold flex items-center gap-2">
+            🏆 {t('leaderboard') || 'Bảng xếp hạng'}
+          </h3>
+        </div>
+
+        {leaderboardLoading ? (
+          <div className="text-center text-[var(--c-muted)] py-8">{t('loading')}</div>
+        ) : leaderboard.length === 0 ? (
+          <div className="text-center text-[var(--c-muted)] py-8 text-sm">{t('noLeaderboardYet') || 'Chưa có dữ liệu bảng xếp hạng'}</div>
+        ) : (
+          <div className="space-y-1">
+            {leaderboard.map((entry, idx) => {
+              const isTop3 = entry.rank <= 3
+              const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-400']
+              const medalBg = ['bg-yellow-400/10', 'bg-gray-300/10', 'bg-amber-400/10']
+              return (
+                <div
+                  key={entry.name}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
+                    isTop3 ? `${medalBg[idx]} border border-${medalColors[idx]}/30` : 'hover:bg-[var(--c-elevated)]'
+                  }`}
+                >
+                  {/* Rank */}
+                  <div className={`w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm ${
+                    isTop3 ? `bg-${medalColors[idx]}/20 text-${medalColors[idx]}` : 'bg-[var(--c-elevated)] text-[var(--c-muted)]'
+                  }`}>
+                    {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank}
+                  </div>
+                  {/* Name */}
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-medium truncate ${isTop3 ? 'text-[var(--c-text)]' : 'text-[var(--c-text)]'}`}>
+                      {entry.name}
+                    </div>
+                  </div>
+                  {/* Stats */}
+                  <div className="flex items-center gap-3 text-xs text-[var(--c-muted)]">
+                    <div className="text-right">
+                      <div className="font-medium text-[var(--c-accent)]">{entry.elo}</div>
+                      <div className="text-[10px]">ELO</div>
+                    </div>
+                    <Badge tier={entry.tier as 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'} elo={entry.elo} />
+                    <div className="text-right hidden sm:block">
+                      <div>{entry.wins}W / {entry.totalGames}G</div>
+                      <div className="text-[10px]">{entry.winRate}% WR</div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

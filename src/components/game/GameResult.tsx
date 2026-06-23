@@ -50,14 +50,14 @@ export default function GameResult({ game, myColor, onClose, onPlayAgain }: Game
 
         <div className="flex justify-center gap-8 py-3">
           <div className="text-center">
-            <div className="text-[var(--c-danger)] font-medium">{game.redPlayer.name}</div>
+            <div className="text-[var(--c-danger)] font-medium">{game.redPlayer?.name ?? 'Red'}</div>
             <div className="text-[var(--c-muted)] text-xs mt-0.5">
               {game.winner === 'red' ? winLabel : game.winner === 'draw' ? drawLabel : '—'}
             </div>
           </div>
           <div className="text-[var(--c-muted)] text-2xl self-center">vs</div>
           <div className="text-center">
-            <div className="text-[var(--c-piece-black)] font-medium">{game.blackPlayer.name}</div>
+            <div className="text-[var(--c-piece-black)] font-medium">{game.blackPlayer?.name ?? 'Black'}</div>
             <div className="text-[var(--c-muted)] text-xs mt-0.5">
               {game.winner === 'black' ? winLabel : game.winner === 'draw' ? drawLabel : '—'}
             </div>

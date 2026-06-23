@@ -1,34 +1,73 @@
 'use client'
 
-import useSWR from 'swr'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import type { GameState } from '@/types'
 
-const fetcher = async (url: string) => {
-  const res = await fetch(url)
-  const data = await res.json()
-  if (!res.ok) {
-    // If waiting for opponent, return the waiting state instead of error
-    if (data.status === 'waiting') return data
-    throw new Error(data.error || 'not_found')
-  }
-  return data
-}
+export function useGameSSE(roomId: string, deviceId: string) {
+  const [game, setGame] = useState<GameState | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const eventSourceRef = useRef<EventSource | null>(null)
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-export function useGame(roomId: string, deviceId: string) {
-  const { data, error, mutate } = useSWR<GameState>(
-    roomId && deviceId ? `/api/games/${roomId}?deviceId=${deviceId}` : null,
-    fetcher,
-    { refreshInterval: 1500, dedupingInterval: 500 }
-  )
+  const connect = useCallback(() => {
+    if (!roomId || !deviceId) return
+
+    // Close existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+    }
+
+    const es = new EventSource(`/api/games/${roomId}/stream?deviceId=${deviceId}`)
+    eventSourceRef.current = es
+
+    es.addEventListener('update', (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        if (data.error === 'ROOM_NOT_FOUND') {
+          setError('ROOM_NOT_FOUND')
+          setLoading(false)
+          return
+        }
+        setGame(data)
+        setLoading(false)
+        setError(null)
+      } catch {}
+    })
+
+    es.addEventListener('error', (e) => {
+      console.error('SSE error:', e)
+      setError('Connection error')
+    })
+
+    es.onerror = () => {
+      es.close()
+      // Reconnect after 1s
+      reconnectTimeoutRef.current = setTimeout(() => {
+        connect()
+      }, 1000)
+    }
+  }, [roomId, deviceId])
+
+  useEffect(() => {
+    connect()
+
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
+    }
+  }, [connect])
 
   // Heartbeat every 20s
-  const heartbeatRef = useRef<NodeJS.Timeout | null>(null)
   useEffect(() => {
     if (!roomId || !deviceId) return
-    if (data?.status === 'finished') return
+    if (game?.status === 'finished') return
 
-    heartbeatRef.current = setInterval(() => {
+    const heartbeat = setInterval(() => {
       fetch(`/api/games/${roomId}/heartbeat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,47 +75,38 @@ export function useGame(roomId: string, deviceId: string) {
       }).catch(() => {})
     }, 20000)
 
-    return () => {
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current)
-    }
-  }, [roomId, deviceId, data?.status])
+    return () => clearInterval(heartbeat)
+  }, [roomId, deviceId, game?.status])
 
   async function makeMove(from: { row: number; col: number }, to: { row: number; col: number }) {
-    if (!data || data.status !== 'playing') return
+    if (!game || game.status !== 'playing') return
 
-    // Optimistic update - update UI immediately before server responds
-    const previousData = data
+    const previousData = game
     const optimisticGame = {
-      ...data,
-      boardState: data.boardState!.map((row: (string | null)[]) => [...row]),
+      ...game,
+      boardState: game.boardState!.map((row: (string | null)[]) => [...row]),
     }
-    // Apply the move optimistically
     const piece = optimisticGame.boardState[from.row][from.col]
     optimisticGame.boardState[to.row][to.col] = piece
     optimisticGame.boardState[from.row][from.col] = null
-    optimisticGame.currentTurn = data.currentTurn === 'red' ? 'black' : 'red'
+    optimisticGame.currentTurn = game.currentTurn === 'red' ? 'black' : 'red'
 
-    // Optimistically update the UI
-    mutate(optimisticGame, false)
+    setGame(optimisticGame)
 
     try {
       const res = await fetch(`/api/games/${roomId}/move`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId, from, to, moveNumber: data.currentMoveNumber }),
+        body: JSON.stringify({ deviceId, from, to, moveNumber: game.currentMoveNumber }),
       })
       const result = await res.json()
       if (!res.ok) {
-        // Rollback on error
-        mutate(previousData, false)
+        setGame(previousData)
         throw new Error(result.error || 'Move failed')
       }
-      // Revalidate to get the correct state from server
-      mutate()
       return result
     } catch (err) {
-      // Rollback on network error
-      mutate(previousData, false)
+      setGame(previousData)
       throw err
     }
   }
@@ -89,7 +119,6 @@ export function useGame(roomId: string, deviceId: string) {
     })
     const result = await res.json()
     if (!res.ok) throw new Error(result.error || 'Resign failed')
-    mutate()
     return result
   }
 
@@ -101,7 +130,7 @@ export function useGame(roomId: string, deviceId: string) {
     })
     const result = await res.json()
     if (!res.ok) throw new Error(result.error || 'Chat failed')
-    mutate()
+    return result
   }
 
   async function requestTakeback() {
@@ -112,7 +141,7 @@ export function useGame(roomId: string, deviceId: string) {
     })
     const result = await res.json()
     if (!res.ok) throw new Error(result.error || 'Takeback request failed')
-    mutate()
+    return result
   }
 
   async function respondTakeback(accept: boolean) {
@@ -123,7 +152,7 @@ export function useGame(roomId: string, deviceId: string) {
     })
     const result = await res.json()
     if (!res.ok) throw new Error(result.error || 'Takeback response failed')
-    mutate()
+    return result
   }
 
   async function mutePlayer(targetDeviceId: string, mute: boolean) {
@@ -134,14 +163,13 @@ export function useGame(roomId: string, deviceId: string) {
     })
     const result = await res.json()
     if (!res.ok) throw new Error(result.error || 'Mute failed')
-    mutate()
+    return result
   }
 
   return {
-    game: data ?? null,
-    loading: !data && !error,
+    game,
+    loading,
     error,
-    mutate,
     makeMove,
     resign,
     sendChat,

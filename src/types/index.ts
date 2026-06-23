@@ -54,26 +54,27 @@ export interface SpectatorInfo {
 
 export interface GameState {
   roomId: string
-  status: 'playing' | 'finished'
-  currentTurn: Color
-  currentMoveNumber: number
-  boardState: BoardState
-  moves: MoveRecord[]
-  redPlayer: PlayerInfo & { name: string }
-  blackPlayer: PlayerInfo & { name: string }
-  winner: Color | 'draw' | null
-  endReason: 'checkmate' | 'resign' | 'draw_agreement' | 'abandoned' | 'timeout' | null
-  myColor: Color | null
-  timeControl: number | null
-  timeRemaining: { red: number; black: number }
-  lastMoveAt: string | null
-  allowSpectators: boolean
-  allowTakeback: boolean
-  spectators: SpectatorInfo[]
-  chat: ChatMessage[]
-  mutedDeviceIds: string[]
-  takebackRequest: TakebackRequest | null
-  takebacksUsed: { red: number; black: number }
+  status: 'waiting' | 'playing' | 'finished'
+  currentTurn?: Color
+  currentMoveNumber?: number
+  boardState?: BoardState
+  moves?: MoveRecord[]
+  redPlayer?: PlayerInfo & { name: string }
+  blackPlayer?: PlayerInfo & { name: string }
+  winner?: Color | 'draw' | null
+  endReason?: 'checkmate' | 'resign' | 'draw_agreement' | 'abandoned' | 'timeout' | null
+  myColor?: Color | null
+  timeControl?: number | null
+  timeRemaining?: { red: number; black: number }
+  lastMoveAt?: string | null
+  allowSpectators?: boolean
+  allowTakeback?: boolean
+  spectators?: SpectatorInfo[]
+  chat?: ChatMessage[]
+  mutedDeviceIds?: string[]
+  takebackRequest?: TakebackRequest | null
+  takebacksUsed?: { red: number; black: number }
+  message?: string // For waiting status
 }
 
 export type Language = 'vi' | 'en' | 'zh' | 'ko' | 'ru' | 'fr' | 'de' | 'pt'
