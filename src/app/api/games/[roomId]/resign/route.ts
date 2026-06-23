@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/mongodb'
 import { Game } from '@/models/Game'
+import { Room } from '@/models/Room'
 import { updateElo } from '../route'
 
 export async function POST(
@@ -25,6 +26,7 @@ export async function POST(
     await Game.findOneAndUpdate({ roomId }, {
       $set: { winner, endReason: 'resign', status: 'finished', finishedAt: new Date() }
     })
+    await Room.findOneAndUpdate({ roomId }, { status: 'finished' })
     await updateElo(game.redPlayer.deviceId, game.blackPlayer.deviceId, winner, game)
 
     return NextResponse.json({ success: true, winner })

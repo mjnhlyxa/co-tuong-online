@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/mongodb'
 import { Game } from '@/models/Game'
+import { Room } from '@/models/Room'
 import { isLegalMove, applyMove, isInCheck, getGameResult } from '@/lib/xiangqi/rules'
 import { getMoveNotation } from '@/lib/xiangqi/notation'
 import { v4 as uuidv4 } from 'uuid'
@@ -107,6 +108,7 @@ export async function POST(
 
     if (winner) {
       await updateElo(game.redPlayer.deviceId, game.blackPlayer.deviceId, winner, game)
+      await Room.findOneAndUpdate({ roomId }, { status: 'finished' })
     }
 
     return NextResponse.json({

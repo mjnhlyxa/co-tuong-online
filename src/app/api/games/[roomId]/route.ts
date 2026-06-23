@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/mongodb'
 import { Game } from '@/models/Game'
 import { Player } from '@/models/Player'
+import { Room } from '@/models/Room'
 import { calculateElo, getTier } from '@/lib/elo'
 
 const ABANDONED_TIMEOUT_MS = 30_000
@@ -31,6 +32,11 @@ export async function GET(
       return NextResponse.json({ error: 'ROOM_NOT_FOUND' }, { status: 404 })
     }
 
+    // Helper to mark room as finished
+    async function markRoomFinished() {
+      await Room.findOneAndUpdate({ roomId }, { status: 'finished' })
+    }
+
     // Abandoned detection: if playing and current player hasn't sent heartbeat in 30s
     if (game.status === 'playing') {
       const now = Date.now()
@@ -42,7 +48,7 @@ export async function GET(
         game.status = 'finished'
         game.finishedAt = new Date()
         await game.save()
-        // Update ELO
+        await markRoomFinished()
         await updateElo(game.redPlayer.deviceId, game.blackPlayer.deviceId, winner, game)
       }
     }
@@ -59,6 +65,7 @@ export async function GET(
         game.status = 'finished'
         game.finishedAt = new Date()
         await game.save()
+        await markRoomFinished()
         await updateElo(game.redPlayer.deviceId, game.blackPlayer.deviceId, winner, game)
       }
     }
