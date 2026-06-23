@@ -104,6 +104,8 @@ export interface RoomInfo {
   type: 'public' | 'private'
   status: 'waiting' | 'playing' | 'finished'
   host: { name: string; elo: number; tier: string }
+  guest?: { name: string | null; elo: number | null }
   timeControl: number | null
+  allowSpectators: boolean
   createdAt: string
 }

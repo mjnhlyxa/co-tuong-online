@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const tier = searchParams.get('tier')
 
-    const query: Record<string, unknown> = { type: 'public', status: 'waiting' }
+    const query: Record<string, unknown> = { type: 'public', status: { $in: ['waiting', 'playing'] } }
     if (tier) query['host.tier'] = tier
 
     const rooms = await Room.find(query)
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
         type: r.type,
         status: r.status,
         host: { name: r.host.name, elo: r.host.elo, tier: r.host.tier },
+        guest: r.guest?.deviceId ? { name: r.guest.name, elo: r.guest.elo } : null,
         timeControl: r.timeControl,
         allowSpectators: r.allowSpectators,
         createdAt: r.createdAt,
