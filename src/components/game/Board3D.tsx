@@ -7,6 +7,8 @@ import * as THREE from 'three'
 import { getLegalMoves } from '@/lib/xiangqi/rules'
 import { PIECE_CHARS } from '@/lib/xiangqi/notation'
 import type { BoardState, Position, Color, MoveRecord } from '@/types'
+import '@fontsource/noto-sans-sc/400.css'
+import '@fontsource/noto-sans-sc/700.css'
 
 const CELL = 1.0
 const PAD = 0.6
@@ -121,13 +123,13 @@ function Piece({ code, targetPos, color, isSelected, isFromLast, isToLast, isInC
         style={{
           pointerEvents: 'none',
           userSelect: 'none',
-          fontFamily: '"Noto Serif SC", "PingFang SC", serif',
+          fontFamily: '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", serif',
           fontWeight: 700,
-          fontSize: '38px',
+          fontSize: '32px',
           lineHeight: '1',
           color: baseColor,
-          width: '40px',
-          height: '40px',
+          width: '36px',
+          height: '36px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -219,9 +221,9 @@ function BoardBase() {
         style={{
           pointerEvents: 'none',
           userSelect: 'none',
-          fontFamily: '"Noto Serif SC", "PingFang SC", serif',
+          fontFamily: '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", serif',
           fontWeight: 700,
-          fontSize: '28px',
+          fontSize: '24px',
           color: '#5a3814',
           letterSpacing: '0.5em',
           textShadow: '0 0 4px rgba(255,255,255,0.4)',
@@ -348,7 +350,7 @@ export default function Board3D({ board, myColor, currentTurn, lastMove, isInChe
     <div className="relative w-full" style={{ aspectRatio: '9/10' }}>
       <Canvas
         shadows
-        camera={{ position: [0, 11, 0.6], fov: 28 }}
+        camera={{ position: [0, 13, 0.4], fov: 32 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
