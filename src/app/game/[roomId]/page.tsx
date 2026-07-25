@@ -3,6 +3,7 @@
 import { use, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Board from '@/components/game/Board'
+import Board3D from '@/components/game/Board3D'
 import PlayerPanel from '@/components/game/PlayerPanel'
 import MoveHistory from '@/components/game/MoveHistory'
 import GameSidebar from '@/components/game/GameSidebar'
@@ -35,6 +36,7 @@ export default function GamePage({ params }: { params: Params }) {
   const [resignConfirm, setResignConfirm] = useState(false)
   const [showTakebackRejected, setShowTakebackRejected] = useState(false)
   const prevTakebackStatusRef = useRef<string | null>(null)
+  const [use3D, setUse3D] = useState(false)
 
   // Registration modal state (for name input on game page)
   const [showRegModal, setShowRegModal] = useState(false)
@@ -335,16 +337,47 @@ export default function GamePage({ params }: { params: Params }) {
           </div>
 
           {/* Board */}
-          <div className="flex-shrink-0">
-            <Board
-              board={playingGame.boardState}
-              myColor={myColor}
-              currentTurn={playingGame.currentTurn}
-              lastMove={playingGame.moves[playingGame.moves.length - 1] ?? null}
-              isInCheck={boardInCheck}
-              disabled={!isPlayer || playingGame.currentTurn !== myColor || playingGame.status !== 'playing'}
-              onMove={handleMove}
-            />
+          <div className="flex-shrink-0 w-full max-w-[520px]">
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setUse3D(!use3D)}
+                className="text-xs px-3 py-1.5 rounded-lg bg-[var(--c-elevated)] border border-[var(--c-border)] text-[var(--c-muted)] hover:text-[var(--c-accent)] hover:border-[var(--c-accent)] transition-all flex items-center gap-1.5"
+                aria-label={`Switch to ${use3D ? '2D' : '3D'} board`}
+              >
+                {use3D ? (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                    2D
+                  </>
+                ) : (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+                    3D
+                  </>
+                )}
+              </button>
+            </div>
+            {use3D ? (
+              <Board3D
+                board={playingGame.boardState}
+                myColor={myColor}
+                currentTurn={playingGame.currentTurn}
+                lastMove={playingGame.moves[playingGame.moves.length - 1] ?? null}
+                isInCheck={boardInCheck}
+                disabled={!isPlayer || playingGame.currentTurn !== myColor || playingGame.status !== 'playing'}
+                onMove={handleMove}
+              />
+            ) : (
+              <Board
+                board={playingGame.boardState}
+                myColor={myColor}
+                currentTurn={playingGame.currentTurn}
+                lastMove={playingGame.moves[playingGame.moves.length - 1] ?? null}
+                isInCheck={boardInCheck}
+                disabled={!isPlayer || playingGame.currentTurn !== myColor || playingGame.status !== 'playing'}
+                onMove={handleMove}
+              />
+            )}
           </div>
 
           {/* My panel (bottom) */}

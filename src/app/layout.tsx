@@ -94,13 +94,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} ${notoSerifSC.variable} h-full`}>
       <head>
         {/* Apply saved theme before first paint to prevent FOUC */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();` }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="h-full antialiased">{children}</body>
+      <body className="h-full antialiased min-h-screen">{children}</body>
     </html>
   )
 }
