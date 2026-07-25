@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useState } from 'react'
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber'
-import { ContactShadows, Html } from '@react-three/drei'
+import { ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
 import { getLegalMoves } from '@/lib/xiangqi/rules'
 import { PIECE_CHARS } from '@/lib/xiangqi/notation'
@@ -115,29 +115,67 @@ function Piece({ code, targetPos, color, isSelected, isFromLast, isToLast, isInC
         <circleGeometry args={[PIECE_R * 0.85, 32]} />
         <meshStandardMaterial color={topColor} metalness={0.25} roughness={0.5} />
       </mesh>
-      {/* Chinese character via Html overlay (uses page font) */}
-      <Html
-        position={[0, PIECE_H / 2 + 0.01, 0]}
-        center
-        transform={false}
-        style={{
-          pointerEvents: 'none',
-          userSelect: 'none',
-          fontFamily: '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", serif',
-          fontWeight: 700,
-          fontSize: '32px',
-          lineHeight: '1',
-          color: baseColor,
-          width: '36px',
-          height: '36px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {label}
-      </Html>
+      {/* Chinese character rendered as Canvas texture (most reliable for 3D) */}
+      <PieceLabelTexture character={label} color={baseColor} />
     </group>
+  )
+}
+
+// Render Chinese character as a Canvas-based texture (font-independent, works in any browser)
+function PieceLabelTexture({ character, color }: { character: string; color: string }) {
+  const texture = useMemo(() => {
+    const size = 128
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')!
+    // Clear
+    ctx.clearRect(0, 0, size, size)
+    // Draw character with system font fallback (any CJK system font works)
+    ctx.fillStyle = color
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = `bold ${size * 0.7}px "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Heiti SC", "Noto Sans SC", "WenQuanYi Micro Hei", sans-serif`
+    ctx.fillText(character, size / 2, size / 2)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.anisotropy = 4
+    tex.needsUpdate = true
+    return tex
+  }, [character, color])
+
+  return (
+    <mesh position={[0, PIECE_H / 2 + 0.003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[PIECE_R * 1.4, PIECE_R * 1.4]} />
+      <meshBasicMaterial map={texture} transparent depthWrite={false} />
+    </mesh>
+  )
+}
+
+// Render river text "楚河 漢界" as Canvas texture
+function RiverTexture() {
+  const texture = useMemo(() => {
+    const w = 1024, h = 128
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')!
+    ctx.clearRect(0, 0, w, h)
+    ctx.fillStyle = '#5a3814'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = `bold 64px "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Heiti SC", "Noto Sans SC", "WenQuanYi Micro Hei", serif`
+    ctx.fillText('楚  河        漢  界', w / 2, h / 2)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.anisotropy = 4
+    tex.needsUpdate = true
+    return tex
+  }, [])
+
+  return (
+    <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[4, 0.5]} />
+      <meshBasicMaterial map={texture} transparent depthWrite={false} />
+    </mesh>
   )
 }
 
@@ -213,24 +251,8 @@ function BoardBase() {
           </group>
         )
       })}
-      {/* River text */}
-      <Html
-        position={[0, 0.015, 0]}
-        center
-        transform={false}
-        style={{
-          pointerEvents: 'none',
-          userSelect: 'none',
-          fontFamily: '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", serif',
-          fontWeight: 700,
-          fontSize: '24px',
-          color: '#5a3814',
-          letterSpacing: '0.5em',
-          textShadow: '0 0 4px rgba(255,255,255,0.4)',
-        }}
-      >
-        楚 河        漢 界
-      </Html>
+      {/* River text as Canvas texture */}
+      <RiverTexture />
     </group>
   )
 }
