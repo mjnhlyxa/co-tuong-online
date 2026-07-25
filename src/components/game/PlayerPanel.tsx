@@ -10,8 +10,8 @@ import type { GameState, Color, BoardState } from '@/types'
 import { clsx } from 'clsx'
 
 const INITIAL_PIECES: Record<string, number> = {
-  rk: 1, ra: 2, re: 2, rh: 2, rr: 2, rc: 2, rp: 5,
-  bk: 1, ba: 2, be: 2, bh: 2, br: 2, bc: 2, bp: 5,
+  'r-jiang': 1, 'r-shi': 2, 'r-xiang': 2, 'r-ju': 2, 'r-ma': 2, 'r-pao': 2, 'r-zu': 5,
+  'b-jiang': 1, 'b-shi': 2, 'b-xiang': 2, 'b-ju': 2, 'b-ma': 2, 'b-pao': 2, 'b-zu': 5,
 }
 
 function computeCaptured(board: BoardState | undefined): { red: string[]; black: string[] } {

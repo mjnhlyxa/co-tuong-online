@@ -17,8 +17,8 @@ const PIECE_H = 0.18
 const ANIM_SPEED = 0.12  // 0.12 per frame at 60fps → ~500ms travel
 
 const PIECE_LABEL: Record<string, string> = {
-  rk: '帥', ra: '仕', re: '相', rh: '俥', rr: '馬', rc: '炮', rp: '兵',
-  bk: '將', ba: '士', be: '象', bh: '車', br: '傌', bc: '砲', bp: '卒',
+  'r-jiang': '帥', 'r-shi': '仕', 'r-xiang': '相', 'r-ju': '俥', 'r-ma': '馬', 'r-pao': '炮', 'r-zu': '兵',
+  'b-jiang': '將', 'b-shi': '士', 'b-xiang': '象', 'b-ju': '車', 'b-ma': '傌', 'b-pao': '砲', 'b-zu': '卒',
 }
 
 // Edge dot positions (cannons and pawns starting positions)

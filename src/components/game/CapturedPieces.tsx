@@ -2,12 +2,17 @@
 import { useEffect, useRef } from 'react'
 
 const PIECE_CHARS: Record<string, string> = {
-  rk: '帥', ra: '仕', re: '相', rh: '俥', rr: '馬', rc: '炮', rp: '兵',
-  bk: '將', ba: '士', be: '象', bh: '車', br: '傌', bc: '砲', bp: '卒',
+  'r-jiang': '帥', 'r-shi': '仕', 'r-xiang': '相', 'r-ju': '俥', 'r-ma': '馬', 'r-pao': '炮', 'r-zu': '兵',
+  'b-jiang': '將', 'b-shi': '士', 'b-xiang': '象', 'b-ju': '車', 'b-ma': '傌', 'b-pao': '砲', 'b-zu': '卒',
 }
 
-const PIECE_VALUE: Record<string, number> = {
-  k: 100, a: 20, e: 20, h: 90, r: 40, c: 45, p: 10,
+const PIECE_TYPE_VALUE: Record<string, number> = {
+  jiang: 100, shi: 20, xiang: 20, ju: 90, ma: 40, pao: 45, zu: 10,
+}
+
+function getPieceValue(code: string): number {
+  const type = code.split('-')[1] ?? ''
+  return PIECE_TYPE_VALUE[type] ?? 0
 }
 
 interface CapturedPiecesProps {
@@ -20,7 +25,7 @@ interface CapturedPiecesProps {
 export default function CapturedPieces({ codes, color, size = 'md', label }: CapturedPiecesProps) {
   if (!codes || codes.length === 0) return null
 
-  const sorted = [...codes].sort((a, b) => (PIECE_VALUE[b[1]!] ?? 0) - (PIECE_VALUE[a[1]!] ?? 0))
+  const sorted = [...codes].sort((a, b) => getPieceValue(b) - getPieceValue(a))
   const dim = size === 'sm' ? 'w-5 h-5' : size === 'lg' ? 'w-7 h-7' : 'w-6 h-6'
 
   return (
