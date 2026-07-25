@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit, JetBrains_Mono, Noto_Serif_SC } from 'next/font/google'
 import './globals.css'
 
@@ -87,6 +87,16 @@ const jsonLd = {
     name: 'Cờ Tướng (Xiangqi)',
     description: 'Traditional Chinese Chess — a classic two-player strategy board game.',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0a0e1a' },
+    { media: '(prefers-color-scheme: light)', color: '#faf6ee' },
+  ],
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
