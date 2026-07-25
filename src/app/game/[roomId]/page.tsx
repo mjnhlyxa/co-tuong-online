@@ -12,6 +12,7 @@ import GameResult from '@/components/game/GameResult'
 import BottomActionBar from '@/components/game/BottomActionBar'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import Icon from '@/components/ui/Icon'
 import LanguageSelector from '@/components/ui/LanguageSelector'
 import ThemePicker from '@/components/ui/ThemePicker'
 import CopyButton from '@/components/ui/CopyButton'
@@ -254,17 +255,27 @@ export default function GamePage({ params }: { params: Params }) {
             <p className="text-[var(--c-muted)] text-sm">{t('joinAsDesc') || 'Bạn muốn tham gia với tư cách nào?'}</p>
             <button
               onClick={() => handleSelectRole('player')}
-              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-accent)] bg-[var(--c-accent-bg)] text-left hover:bg-[var(--c-accent)]/10 transition-colors cursor-pointer"
+              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-accent)] bg-[var(--c-accent-bg)] text-left hover:bg-[var(--c-accent)]/15 transition-all flex items-center gap-3"
             >
-              <div className="text-[var(--c-accent)] font-semibold text-base">🎮 {t('playAsOpponent') || 'Chơi như đối thủ'}</div>
-              <div className="text-[var(--c-muted)] text-xs mt-1">{t('playAsOpponentDesc') || 'Vào chơi cờ với chủ phòng'}</div>
+              <div className="w-10 h-10 rounded-lg bg-[var(--c-accent)] flex items-center justify-center shrink-0">
+                <Icon name="controller" size={20} className="text-[var(--c-accent-text)]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[var(--c-accent)] font-semibold text-base">{t('playAsOpponent') || 'Chơi như đối thủ'}</div>
+                <div className="text-[var(--c-muted)] text-xs mt-0.5">{t('playAsOpponentDesc') || 'Vào chơi cờ với chủ phòng'}</div>
+              </div>
             </button>
             <button
               onClick={() => handleSelectRole('spectator')}
-              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-border)] text-left hover:border-[var(--c-muted)] transition-colors cursor-pointer"
+              className="w-full py-4 px-4 rounded-xl border-2 border-[var(--c-border)] text-left hover:border-[var(--c-muted)] hover:bg-[var(--c-elevated)]/30 transition-all flex items-center gap-3"
             >
-              <div className="text-[var(--c-text)] font-semibold text-base">👁 {t('watchAsSpectator') || 'Xem như khán giả'}</div>
-              <div className="text-[var(--c-muted)] text-xs mt-1">{t('watchAsSpectatorDesc') || 'Theo dõi ván đấu mà không chơi'}</div>
+              <div className="w-10 h-10 rounded-lg bg-[var(--c-elevated-2)] flex items-center justify-center shrink-0">
+                <Icon name="eye" size={20} className="text-[var(--c-text)]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[var(--c-text)] font-semibold text-base">{t('watchAsSpectator') || 'Xem như khán giả'}</div>
+                <div className="text-[var(--c-muted)] text-xs mt-0.5">{t('watchAsSpectatorDesc') || 'Theo dõi ván đấu mà không chơi'}</div>
+              </div>
             </button>
           </div>
         </Modal>
