@@ -350,7 +350,7 @@ export default function LobbyPage() {
               <div className="mt-10 flex gap-6 sm:gap-8 justify-center lg:justify-start text-left">
                 <div>
                   <div className="text-2xl sm:text-3xl font-bold text-gradient-gold" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                    {leaderboardTotal || 0}
+                    {leaderboardTotal > 0 ? leaderboardTotal : '—'}
                   </div>
                   <div className="text-xs text-[var(--c-muted)] uppercase tracking-wider">Players</div>
                 </div>

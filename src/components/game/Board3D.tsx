@@ -1,195 +1,252 @@
 'use client'
 
-import { useRef, useMemo, useState, useEffect, Suspense } from 'react'
+import { useRef, useMemo, useState } from 'react'
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber'
-import { OrbitControls, Environment, ContactShadows, Text } from '@react-three/drei'
+import { ContactShadows, Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { getLegalMoves } from '@/lib/xiangqi/rules'
 import { PIECE_CHARS } from '@/lib/xiangqi/notation'
 import type { BoardState, Position, Color, MoveRecord } from '@/types'
 
-const CELL = 1.0          // world units per cell
-const PAD = 1.0           // padding around board
-const BOARD_W = 8 * CELL + 2 * PAD
-const BOARD_H = 9 * CELL + 2 * PAD
-const PIECE_R = 0.42
+const CELL = 1.0
+const PAD = 0.6
+const PIECE_R = 0.46
 const PIECE_H = 0.18
+const ANIM_SPEED = 0.12  // 0.12 per frame at 60fps → ~500ms travel
 
 const PIECE_LABEL: Record<string, string> = {
-  // Red
-  'rk': '帥', 'ra': '仕', 're': '相', 'rh': '俥', 'rr': '馬', 'rc': '炮', 'rp': '兵',
-  // Black
-  'bk': '將', 'ba': '士', 'be': '象', 'bh': '車', 'br': '傌', 'bc': '砲', 'bp': '卒',
+  rk: '帥', ra: '仕', re: '相', rh: '俥', rr: '馬', rc: '炮', rp: '兵',
+  bk: '將', ba: '士', be: '象', bh: '車', br: '傌', bc: '砲', bp: '卒',
 }
+
+// Edge dot positions (cannons and pawns starting positions)
+const EDGE_DOTS: Array<[number, number]> = [
+  // Black cannons (row 2, cols 1, 7)
+  [2, 1], [2, 7],
+  // Red cannons (row 7, cols 1, 7)
+  [7, 1], [7, 7],
+  // Black pawns (row 3, cols 0, 2, 4, 6, 8)
+  [3, 0], [3, 2], [3, 4], [3, 6], [3, 8],
+  // Red pawns (row 6, cols 0, 2, 4, 6, 8)
+  [6, 0], [6, 2], [6, 4], [6, 6], [6, 8],
+]
 
 interface PieceProps {
   code: string
-  position: [number, number, number]
+  targetPos: [number, number, number]
   color: Color
   isSelected: boolean
-  isMovable: boolean
-  isLastMove: boolean
+  isFromLast: boolean
+  isToLast: boolean
   isInCheck: boolean
   onClick: () => void
 }
 
-function Piece({ code, position, color, isSelected, isMovable, isLastMove, isInCheck, onClick }: PieceProps) {
-  const ref = useRef<THREE.Group>(null)
+function Piece({ code, targetPos, color, isSelected, isFromLast, isToLast, isInCheck, onClick }: PieceProps) {
+  const groupRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
-  const targetPos = useMemo(() => new THREE.Vector3(...position), [position])
+  const targetVec = useMemo(() => new THREE.Vector3(...targetPos), [targetPos])
 
-  // Smooth lerp to position
-  useFrame(() => {
-    if (!ref.current) return
-    ref.current.position.lerp(targetPos, 0.18)
-    // Lift if selected or in check
-    const liftTarget = isSelected ? 0.15 : isInCheck ? 0.08 : 0
-    ref.current.position.y += (ref.current.position.y + liftTarget - ref.current.position.y) * 0.15
-    // Better: use actual y coordination
-    ref.current.position.y = ref.current.position.y * 0.85 + (position[1] + liftTarget) * 0.15
+  // Animation: lerp current → target
+  useFrame((_, delta) => {
+    if (!groupRef.current) return
+    const lift = isSelected ? 0.18 : isInCheck ? 0.1 : 0
+    const finalY = targetPos[1] + lift
+    groupRef.current.position.x += (targetPos[0] - groupRef.current.position.x) * ANIM_SPEED
+    groupRef.current.position.y += (finalY - groupRef.current.position.y) * ANIM_SPEED
+    groupRef.current.position.z += (targetPos[2] - groupRef.current.position.z) * ANIM_SPEED
+    // Subtle hover wobble
+    if (hovered) {
+      groupRef.current.rotation.z = Math.sin(performance.now() / 200) * 0.04
+    } else {
+      groupRef.current.rotation.z *= 0.9
+    }
   })
 
   const label = PIECE_LABEL[code] ?? '?'
   const isRed = color === 'red'
   const baseColor = isRed ? '#dc2626' : '#1a1f2e'
-  const textColor = isRed ? '#fff5f3' : '#e8eaef'
+  const topColor = isRed ? '#fde0d9' : '#f0f3f8'
 
   return (
     <group
-      ref={ref}
-      position={position}
+      ref={groupRef}
+      position={targetPos}
       onClick={(e) => { e.stopPropagation(); onClick() }}
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default' }}
     >
+      {/* Selection glow ring under base */}
+      {isSelected && (
+        <mesh position={[0, -PIECE_H / 2 + 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[PIECE_R * 1.05, PIECE_R * 1.4, 32]} />
+          <meshBasicMaterial color="#d4a849" transparent opacity={0.95} />
+        </mesh>
+      )}
+      {/* LAST MOVE FROM: prominent gold filled ring */}
+      {isFromLast && (
+        <mesh position={[0, -PIECE_H / 2 + 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[PIECE_R * 0.9, PIECE_R * 1.3, 32]} />
+          <meshBasicMaterial color="#d4a849" transparent opacity={0.85} />
+        </mesh>
+      )}
+      {/* LAST MOVE TO: lighter gold outline ring */}
+      {isToLast && (
+        <mesh position={[0, -PIECE_H / 2 + 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[PIECE_R * 0.95, PIECE_R * 1.15, 32]} />
+          <meshBasicMaterial color="#fbbf24" transparent opacity={0.6} />
+        </mesh>
+      )}
       {/* Cylindrical piece */}
       <mesh castShadow receiveShadow>
         <cylinderGeometry args={[PIECE_R, PIECE_R, PIECE_H, 32]} />
         <meshStandardMaterial
           color={baseColor}
-          metalness={0.35}
-          roughness={0.45}
+          metalness={0.4}
+          roughness={0.4}
           emissive={isInCheck ? '#dc2626' : isSelected ? '#d4a849' : '#000000'}
-          emissiveIntensity={isInCheck ? 0.6 : isSelected ? 0.4 : 0}
+          emissiveIntensity={isInCheck ? 0.7 : isSelected ? 0.5 : 0}
         />
       </mesh>
-      {/* Top */}
-      <mesh position={[0, PIECE_H / 2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Top face (lighter, for engraved look) */}
+      <mesh position={[0, PIECE_H / 2 + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[PIECE_R * 0.85, 32]} />
-        <meshStandardMaterial color={isRed ? '#fde0d9' : '#f0f3f8'} metalness={0.2} roughness={0.6} />
+        <meshStandardMaterial color={topColor} metalness={0.25} roughness={0.5} />
       </mesh>
-      {/* Chinese character */}
-      <Text
-        position={[0, PIECE_H / 2 + 0.005, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={PIECE_R * 1.1}
-        color={baseColor}
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.005}
-        outlineColor={textColor}
+      {/* Chinese character via Html overlay (uses page font) */}
+      <Html
+        position={[0, PIECE_H / 2 + 0.01, 0]}
+        center
+        transform={false}
+        style={{
+          pointerEvents: 'none',
+          userSelect: 'none',
+          fontFamily: '"Noto Serif SC", "PingFang SC", serif',
+          fontWeight: 700,
+          fontSize: '38px',
+          lineHeight: '1',
+          color: baseColor,
+          width: '40px',
+          height: '40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         {label}
-      </Text>
-      {/* Selection ring */}
-      {isSelected && (
-        <mesh position={[0, -PIECE_H / 2 + 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[PIECE_R * 1.0, PIECE_R * 1.25, 32]} />
-          <meshBasicMaterial color="#d4a849" transparent opacity={0.9} />
-        </mesh>
-      )}
-      {/* Highlight ring */}
-      {isLastMove && (
-        <mesh position={[0, -PIECE_H / 2 + 0.003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[PIECE_R * 1.0, PIECE_R * 1.15, 32]} />
-          <meshBasicMaterial color="#fbbf24" transparent opacity={0.5} />
-        </mesh>
-      )}
-      {/* Scale on hover */}
-      <mesh scale={hovered ? 1.08 : 1}>
-        <cylinderGeometry args={[PIECE_R, PIECE_R, PIECE_H, 32]} />
-        <meshBasicMaterial transparent opacity={0} />
-      </mesh>
+      </Html>
     </group>
   )
 }
 
 function BoardBase() {
-  // Wooden board with grid lines
-  const linesMaterial = useMemo(() => new THREE.LineBasicMaterial({ color: '#3a2a14', linewidth: 1.5 }), [])
+  // Edge dots positions and line material
+  const linesMaterial = useMemo(() => new THREE.LineBasicMaterial({ color: '#3a2a14' }), [])
   const gridLines = useMemo(() => {
     const points: THREE.Vector3[] = []
-    // Horizontal lines (10 rows)
+    // 10 horizontal lines
     for (let r = 0; r < 10; r++) {
-      const y = 0.001
-      const z = -PAD + r * CELL - (8 * CELL) / 2
-      points.push(new THREE.Vector3(-PAD - 4 * CELL, y, z))
-      points.push(new THREE.Vector3(PAD + 4 * CELL, y, z))
+      const z = (r - 4.5) * CELL
+      points.push(new THREE.Vector3(-4 * CELL, 0.001, z))
+      points.push(new THREE.Vector3(4 * CELL, 0.001, z))
     }
-    // Vertical lines (9 cols, broken at river)
+    // 9 vertical lines (broken at river)
     for (let c = 0; c < 9; c++) {
-      const x = -PAD + c * CELL - (8 * CELL) / 2
-      points.push(new THREE.Vector3(x, 0.001, -PAD - 4 * CELL))
-      points.push(new THREE.Vector3(x, 0.001, -PAD - 0 * CELL))
-      points.push(new THREE.Vector3(x, 0.001, PAD + 0 * CELL))
-      points.push(new THREE.Vector3(x, 0.001, PAD + 4 * CELL))
+      const x = (c - 4) * CELL
+      points.push(new THREE.Vector3(x, 0.001, -4.5 * CELL))
+      points.push(new THREE.Vector3(x, 0.001, -0.5 * CELL))
+      points.push(new THREE.Vector3(x, 0.001, 0.5 * CELL))
+      points.push(new THREE.Vector3(x, 0.001, 4.5 * CELL))
     }
-    // Diagonal lines in palace (top)
-    const palaceTop = 0
-    const palaceBottom = 2
-    // Top palace
-    const pc1 = new THREE.Vector3(-PAD + 3 * CELL - 4 * CELL, 0.001, -PAD + palaceTop * CELL - 4 * CELL)
-    const pc2 = new THREE.Vector3(-PAD + 5 * CELL - 4 * CELL, 0.001, -PAD + palaceBottom * CELL - 4 * CELL)
-    const pc3 = new THREE.Vector3(-PAD + 5 * CELL - 4 * CELL, 0.001, -PAD + palaceTop * CELL - 4 * CELL)
-    const pc4 = new THREE.Vector3(-PAD + 3 * CELL - 4 * CELL, 0.001, -PAD + palaceBottom * CELL - 4 * CELL)
-    points.push(pc1, pc2, pc3, pc4)
-    // Bottom palace (mirror)
-    const bcs1 = new THREE.Vector3(-PAD + 3 * CELL - 4 * CELL, 0.001, PAD + (9 - palaceTop) * CELL - 4 * CELL)
-    const bcs2 = new THREE.Vector3(-PAD + 5 * CELL - 4 * CELL, 0.001, PAD + (9 - palaceBottom) * CELL - 4 * CELL)
-    const bcs3 = new THREE.Vector3(-PAD + 5 * CELL - 4 * CELL, 0.001, PAD + (9 - palaceTop) * CELL - 4 * CELL)
-    const bcs4 = new THREE.Vector3(-PAD + 3 * CELL - 4 * CELL, 0.001, PAD + (9 - palaceBottom) * CELL - 4 * CELL)
-    points.push(bcs1, bcs2, bcs3, bcs4)
-
-    const geometry = new THREE.BufferGeometry().setFromPoints(points)
-    return new THREE.LineSegments(geometry, linesMaterial)
+    // Palace diagonals (top)
+    points.push(new THREE.Vector3(-CELL, 0.001, -4.5 * CELL))
+    points.push(new THREE.Vector3(CELL, 0.001, -2.5 * CELL))
+    points.push(new THREE.Vector3(CELL, 0.001, -4.5 * CELL))
+    points.push(new THREE.Vector3(-CELL, 0.001, -2.5 * CELL))
+    // Palace diagonals (bottom)
+    points.push(new THREE.Vector3(-CELL, 0.001, 2.5 * CELL))
+    points.push(new THREE.Vector3(CELL, 0.001, 4.5 * CELL))
+    points.push(new THREE.Vector3(CELL, 0.001, 2.5 * CELL))
+    points.push(new THREE.Vector3(-CELL, 0.001, 4.5 * CELL))
+    return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), linesMaterial)
   }, [linesMaterial])
 
   return (
     <group>
-      {/* Board surface */}
-      <mesh receiveShadow position={[0, -0.02, 0]}>
-        <boxGeometry args={[BOARD_W + 0.5, 0.04, BOARD_H + 0.5]} />
-        <meshStandardMaterial color="#c8a96e" roughness={0.7} metalness={0.05} />
+      {/* Board base (dark frame) */}
+      <mesh receiveShadow position={[0, -0.05, 0]}>
+        <boxGeometry args={[10 * CELL + 0.4, 0.08, 11 * CELL + 0.4]} />
+        <meshStandardMaterial color="#5a3814" roughness={0.85} />
       </mesh>
-      {/* Inner board (slightly darker) */}
-      <mesh receiveShadow position={[0, 0.001, 0]}>
-        <boxGeometry args={[9 * CELL, 0.001, 10 * CELL]} />
-        <meshStandardMaterial color="#d8b878" roughness={0.6} />
+      {/* Board surface */}
+      <mesh receiveShadow position={[0, 0, 0]}>
+        <boxGeometry args={[9 * CELL, 0.02, 10 * CELL]} />
+        <meshStandardMaterial color="#d8b878" roughness={0.7} metalness={0.05} />
       </mesh>
       {/* Grid lines */}
       <primitive object={gridLines} />
-      {/* River text in middle */}
-      <Text
-        position={[0, 0.005, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.6}
-        color="#5a3814"
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.005}
-        outlineColor="#3a2a14"
+      {/* Edge dots (small gold dots) */}
+      {EDGE_DOTS.map(([r, c], i) => {
+        // x: col, z: row
+        const x = (c - 4) * CELL
+        const z = (r - 4.5) * CELL
+        // Dot offset depends on corner
+        const offset = 0.08
+        const dots: Array<[number, number]> = []
+        if (c === 1 || c === 7) {
+          // Cannon column - 4 corner dots
+          dots.push([-offset, -offset], [offset, -offset], [-offset, offset], [offset, offset])
+        } else {
+          // Pawn columns - 2 corner dots
+          dots.push([-offset, -offset], [offset, -offset])
+        }
+        return (
+          <group key={i} position={[x, 0.012, z]}>
+            {dots.map(([dx, dz], j) => (
+              <mesh key={j} position={[dx, 0, dz]} rotation={[-Math.PI / 2, 0, 0]}>
+                <circleGeometry args={[0.025, 8]} />
+                <meshBasicMaterial color="#3a2a14" />
+              </mesh>
+            ))}
+          </group>
+        )
+      })}
+      {/* River text */}
+      <Html
+        position={[0, 0.015, 0]}
+        center
+        transform={false}
+        style={{
+          pointerEvents: 'none',
+          userSelect: 'none',
+          fontFamily: '"Noto Serif SC", "PingFang SC", serif',
+          fontWeight: 700,
+          fontSize: '28px',
+          color: '#5a3814',
+          letterSpacing: '0.5em',
+          textShadow: '0 0 4px rgba(255,255,255,0.4)',
+        }}
       >
         楚 河        漢 界
-      </Text>
+      </Html>
     </group>
   )
 }
 
-function MoveMarker({ position, isSelected }: { position: [number, number, number]; isSelected: boolean }) {
+function MoveMarker({ position, isSelected }: { position: [number, number, number]; isSelected?: boolean }) {
   return (
     <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[0.15, 0.3, 24]} />
-      <meshBasicMaterial color={isSelected ? '#d4a849' : '#22d3ee'} transparent opacity={isSelected ? 0.9 : 0.5} />
+      <ringGeometry args={[0.18, 0.32, 24]} />
+      <meshBasicMaterial color="#22d3ee" transparent opacity={0.7} />
+    </mesh>
+  )
+}
+
+function CaptureMarker({ position }: { position: [number, number, number] }) {
+  return (
+    <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[PIECE_R * 0.6, PIECE_R * 0.95, 24]} />
+      <meshBasicMaterial color="#dc2626" transparent opacity={0.45} />
     </mesh>
   )
 }
@@ -210,14 +267,8 @@ export default function Board3D({ board, myColor, currentTurn, lastMove, isInChe
 
   const flipped = myColor === 'black'
 
-  const rowToZ = (row: number) => {
-    const r = flipped ? 9 - row : row
-    return -PAD + r * CELL - (8 * CELL) / 2 + CELL / 2
-  }
-  const colToX = (col: number) => {
-    const c = flipped ? 8 - col : col
-    return -PAD + c * CELL - (8 * CELL) / 2 + CELL / 2
-  }
+  const rowToZ = (row: number) => (flipped ? 9 - row : row) - 4.5
+  const colToX = (col: number) => (flipped ? 8 - col : col) - 4
 
   function getPieceColor(code: string): Color {
     return code.startsWith('r') ? 'red' : 'black'
@@ -226,7 +277,6 @@ export default function Board3D({ board, myColor, currentTurn, lastMove, isInChe
   function handlePieceClick(row: number, col: number) {
     if (disabled) return
     const piece = board[row]?.[col]
-
     if (selected) {
       const isValid = validMoves.some(m => m.row === row && m.col === col)
       if (isValid) {
@@ -245,7 +295,6 @@ export default function Board3D({ board, myColor, currentTurn, lastMove, isInChe
       setValidMoves([])
       return
     }
-
     if (piece && myColor && getPieceColor(piece) === myColor && currentTurn === myColor) {
       const moves = getLegalMoves(board, { row, col }, myColor)
       setSelected({ row, col })
@@ -254,119 +303,124 @@ export default function Board3D({ board, myColor, currentTurn, lastMove, isInChe
   }
 
   function handleBoardClick(e: ThreeEvent<MouseEvent>) {
-    if (disabled) return
-    if (selected && validMoves.length > 0) {
-      // Snap to nearest cell
-      const x = e.point.x
-      const z = e.point.z
-      const col = Math.round((x + (8 * CELL) / 2 + PAD - CELL / 2) / CELL)
-      const row = Math.round((z + (8 * CELL) / 2 + PAD - CELL / 2) / CELL)
-      const actualRow = flipped ? 9 - row : row
-      const actualCol = flipped ? 8 - col : col
-      if (actualRow >= 0 && actualRow < 10 && actualCol >= 0 && actualCol < 9) {
-        const isValid = validMoves.some(m => m.row === actualRow && m.col === actualCol)
-        if (isValid) {
-          onMove(selected, { row: actualRow, col: actualCol })
-          setSelected(null)
-          setValidMoves([])
-          return
-        }
+    if (disabled || !selected) return
+    const x = e.point.x
+    const z = e.point.z
+    const col = Math.round(x + 4)
+    const row = Math.round(z + 4.5)
+    const actualRow = flipped ? 9 - row : row
+    const actualCol = flipped ? 8 - col : col
+    if (actualRow >= 0 && actualRow < 10 && actualCol >= 0 && actualCol < 9) {
+      const isValid = validMoves.some(m => m.row === actualRow && m.col === actualCol)
+      if (isValid) {
+        onMove(selected, { row: actualRow, col: actualCol })
+        setSelected(null)
+        setValidMoves([])
       }
-      setSelected(null)
-      setValidMoves([])
     }
   }
 
-  // Determine piece positions and animate them
-  // Board state is the source of truth — this avoids stale positions
+  // Compute captured pieces
+  // Get all pieces that should be on the board initially
+  const initial: Record<string, number> = {
+    rk: 1, ra: 2, re: 2, rh: 2, rr: 2, rc: 2, rp: 5,
+    bk: 1, ba: 2, be: 2, bh: 2, br: 2, bc: 2, bp: 5,
+  }
+  const currentCount: Record<string, number> = {}
+  board.forEach(row => row.forEach(code => {
+    if (code) currentCount[code] = (currentCount[code] ?? 0) + 1
+  }))
+  const captured: string[] = []
+  for (const code in initial) {
+    const diff = (initial[code] ?? 0) - (currentCount[code] ?? 0)
+    for (let i = 0; i < diff; i++) {
+      captured.push(code)
+    }
+  }
+  // Captured by which color? If red piece was captured, black captured it.
+  // We mark the position where the capture happened as a red marker
+  const captureMarkers: Position[] = []
+  if (lastMove?.captured) {
+    captureMarkers.push(lastMove.to)
+  }
+
   return (
     <div className="relative w-full" style={{ aspectRatio: '9/10' }}>
       <Canvas
         shadows
-        camera={{ position: [0, 8, 5], fov: 35 }}
+        camera={{ position: [0, 11, 0.6], fov: 28 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
         <color attach="background" args={['#0a0e1a']} />
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={0.55} />
         <directionalLight
-          position={[5, 10, 5]}
-          intensity={1.2}
+          position={[3, 12, 4]}
+          intensity={1.3}
           castShadow
           shadow-mapSize={[2048, 2048]}
-          shadow-camera-far={50}
-          shadow-camera-left={-10}
-          shadow-camera-right={10}
-          shadow-camera-top={10}
-          shadow-camera-bottom={-10}
+          shadow-camera-far={30}
+          shadow-camera-left={-8}
+          shadow-camera-right={8}
+          shadow-camera-top={8}
+          shadow-camera-bottom={-8}
         />
-        <directionalLight position={[-5, 8, -3]} intensity={0.4} color="#a0c4ff" />
-        <Suspense fallback={null}>
-          <BoardBase />
+        <directionalLight position={[-4, 8, -3]} intensity={0.35} color="#a0c4ff" />
+        <pointLight position={[0, 6, 0]} intensity={0.3} color="#ffe4b5" />
 
-          {/* Pieces */}
-          {board.map((row, r) =>
-            row.map((code, c) => {
-              if (!code) return null
-              const isSelected = selected?.row === r && selected?.col === c
-              const isLastMove = lastMove && (
-                (lastMove.from.row === r && lastMove.from.col === c) ||
-                (lastMove.to.row === r && lastMove.to.col === c)
-              )
-              const isKingInCheck = isInCheck && (code === 'rk' || code === 'bk')
-              return (
-                <Piece
-                  key={`${r}-${c}`}
-                  code={code}
-                  position={[colToX(c), PIECE_H / 2, rowToZ(r)]}
-                  color={getPieceColor(code)}
-                  isSelected={isSelected}
-                  isMovable={validMoves.some(m => m.row === r && m.col === c)}
-                  isLastMove={!!isLastMove}
-                  isInCheck={isKingInCheck}
-                  onClick={() => handlePieceClick(r, c)}
-                />
-              )
-            })
-          )}
+        <BoardBase />
 
-          {/* Move markers */}
-          {validMoves.map((m, i) => (
-            <MoveMarker
-              key={`move-${m.row}-${m.col}`}
-              position={[colToX(m.col), 0.01, rowToZ(m.row)]}
-              isSelected={false}
-            />
-          ))}
+        {/* Pieces */}
+        {board.map((row, r) =>
+          row.map((code, c) => {
+            if (!code) return null
+            const isSelected = selected?.row === r && selected?.col === c
+            const isFromLast = lastMove?.from.row === r && lastMove?.from.col === c
+            const isToLast = lastMove?.to.row === r && lastMove?.to.col === c
+            const isKingInCheck = isInCheck && (code === 'rk' || code === 'bk')
+            return (
+              <Piece
+                key={`${r}-${c}-${code}`}
+                code={code}
+                targetPos={[colToX(c), PIECE_H / 2, rowToZ(r)]}
+                color={getPieceColor(code)}
+                isSelected={isSelected}
+                isFromLast={!!isFromLast}
+                isToLast={!!isToLast}
+                isInCheck={isKingInCheck}
+                onClick={() => handlePieceClick(r, c)}
+              />
+            )
+          })
+        )}
 
-          {/* Click target above board */}
-          <mesh
-            position={[0, 0.005, 0]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            onClick={handleBoardClick}
-            receiveShadow={false}
-          >
-            <planeGeometry args={[9 * CELL, 10 * CELL]} />
-            <meshBasicMaterial transparent opacity={0} />
-          </mesh>
+        {/* Move markers */}
+        {validMoves.map(m => {
+          const targetPiece = board[m.row]?.[m.col]
+          const isCapture = !!targetPiece
+          return isCapture ? (
+            <CaptureMarker key={`m-${m.row}-${m.col}`} position={[colToX(m.col), 0.01, rowToZ(m.row)]} />
+          ) : (
+            <MoveMarker key={`m-${m.row}-${m.col}`} position={[colToX(m.col), 0.01, rowToZ(m.row)]} />
+          )
+        })}
 
-          <ContactShadows
-            position={[0, -0.04, 0]}
-            opacity={0.4}
-            scale={20}
-            blur={2.5}
-            far={4}
-          />
-          <Environment preset="city" />
-        </Suspense>
-        <OrbitControls
-          enablePan={false}
-          enableZoom={true}
-          minDistance={6}
-          maxDistance={14}
-          minPolarAngle={Math.PI / 6}
-          maxPolarAngle={Math.PI / 2.2}
-          target={[0, 0, 0]}
+        {/* Click target for empty cells */}
+        <mesh
+          position={[0, 0.005, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={handleBoardClick}
+        >
+          <planeGeometry args={[9 * CELL, 10 * CELL]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
+
+        <ContactShadows
+          position={[0, -0.06, 0]}
+          opacity={0.45}
+          scale={20}
+          blur={2.8}
+          far={5}
         />
       </Canvas>
     </div>

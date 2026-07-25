@@ -332,31 +332,12 @@ export default function GamePage({ params }: { params: Params }) {
         {/* Board area */}
         <div className="flex flex-col flex-1 items-center px-2 py-1 sm:py-3 gap-1 sm:gap-2 overflow-auto">
           {/* Opponent panel (top) */}
-          <div className="w-full max-w-[520px]">
+          <div className="w-full max-w-[640px]">
             <PlayerPanel game={playingGame} color={topColor} position="top" isMyColor={false} />
           </div>
 
-          {/* Board */}
-          <div className="flex-shrink-0 w-full max-w-[520px]">
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={() => setUse3D(!use3D)}
-                className="text-xs px-3 py-1.5 rounded-lg bg-[var(--c-elevated)] border border-[var(--c-border)] text-[var(--c-muted)] hover:text-[var(--c-accent)] hover:border-[var(--c-accent)] transition-all flex items-center gap-1.5"
-                aria-label={`Switch to ${use3D ? '2D' : '3D'} board`}
-              >
-                {use3D ? (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-                    2D
-                  </>
-                ) : (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
-                    3D
-                  </>
-                )}
-              </button>
-            </div>
+          {/* Board - bigger now (max-w-[640px] to fill more screen) */}
+          <div className="flex-shrink-0 w-full max-w-[640px] relative">
             {use3D ? (
               <Board3D
                 board={playingGame.boardState}
@@ -378,10 +359,28 @@ export default function GamePage({ params }: { params: Params }) {
                 onMove={handleMove}
               />
             )}
+            {/* Floating 2D/3D toggle */}
+            <button
+              onClick={() => setUse3D(!use3D)}
+              className="absolute top-2 right-2 z-10 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--c-surface)]/90 backdrop-blur border border-[var(--c-border)] text-[var(--c-muted)] hover:text-[var(--c-accent)] hover:border-[var(--c-accent)] transition-all flex items-center gap-1.5 shadow-lg cursor-pointer"
+              aria-label={`Switch to ${use3D ? '2D' : '3D'} board`}
+            >
+              {use3D ? (
+                <>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                  2D
+                </>
+              ) : (
+                <>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+                  3D
+                </>
+              )}
+            </button>
           </div>
 
           {/* My panel (bottom) */}
-          <div className="w-full max-w-[520px]">
+          <div className="w-full max-w-[640px]">
             <PlayerPanel game={playingGame} color={bottomColor} position="bottom" isMyColor={!!myColor} />
           </div>
 
@@ -406,7 +405,7 @@ export default function GamePage({ params }: { params: Params }) {
         </div>
 
         {/* Side panel - Right side (desktop only): All 3 panels always visible */}
-        <aside className="hidden lg:flex flex-col w-80 border-l border-[var(--c-border)] bg-[var(--c-surface)] overflow-hidden">
+        <aside className="hidden lg:flex flex-col w-80 xl:w-96 border-l border-[var(--c-border)] bg-[var(--c-surface)] overflow-hidden">
           <GameSidebar
             messages={playingGame.chat}
             spectators={playingGame.spectators}
