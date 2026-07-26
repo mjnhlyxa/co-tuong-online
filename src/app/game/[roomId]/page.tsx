@@ -342,10 +342,51 @@ export default function GamePage({ params }: { params: Params }) {
       <div className="flex flex-1 min-h-0">
         {/* Board area */}
         <div className="flex flex-col flex-1 items-center px-2 py-1 sm:py-3 gap-1 sm:gap-2 overflow-auto">
+          {/* Match header bar */}
+          <div className="w-full max-w-[720px] glass-panel rounded-xl px-3 py-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Icon name="trophy" size={14} className="text-[var(--c-accent)] shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-[var(--c-text)] truncate">
+                  {playingGame.status === 'finished'
+                    ? (playingGame.winner === myColor ? 'Bạn thắng!' : playingGame.winner === 'draw' ? 'Hòa' : 'Bạn thua')
+                    : `Phòng #${roomId.slice(0, 6)}`}
+                </div>
+                <div className="text-[10px] text-[var(--c-muted)] truncate">
+                  {playingGame.moves.length} nước · {Math.floor((Date.now() - new Date(playingGame.startedAt).getTime()) / 60000)}m
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {isInCheck(playingGame.boardState, playingGame.currentTurn) && playingGame.status === 'playing' && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[var(--c-danger)] text-white animate-pulse">
+                  CHIẾU
+                </span>
+              )}
+              <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--c-accent)] text-[var(--c-accent-text)] font-bold uppercase">
+                {playingGame.status === 'playing' ? 'Đang đấu' : 'Kết thúc'}
+              </span>
+            </div>
+          </div>
+
           {/* Opponent panel (top) */}
           <div className="w-full max-w-[720px]">
             <PlayerPanel game={playingGame} color={topColor} position="top" isMyColor={false} />
           </div>
+
+          {/* Turn indicator arrow */}
+          {playingGame.status === 'playing' && (
+            <div className="w-full max-w-[720px] flex justify-center -my-1">
+              <div className={`px-3 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                playingGame.currentTurn === topColor
+                  ? 'bg-[var(--c-accent)] text-[var(--c-accent-text)] animate-pulse'
+                  : 'bg-[var(--c-elevated)] text-[var(--c-muted)]'
+              }`}>
+                <Icon name="arrow-right" size={10} className="rotate-90" />
+                <span>{playingGame.currentTurn === topColor ? `${topColor === 'red' ? 'Đỏ' : 'Đen'} đi` : 'Chờ đối thủ'}</span>
+              </div>
+            </div>
+          )}
 
           {/* Board - bigger now (max-w-[720px] to fill more screen) */}
           <div className="flex-shrink-0 w-full max-w-[720px] relative">
