@@ -691,40 +691,53 @@ function MatchCard({
   const s = statusColors[match.status] ?? statusColors.SCHEDULED
 
   return (
-    <div className="glass rounded-xl p-3 sm:p-4">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="text-xs text-[var(--c-muted)] flex items-center gap-2">
+    <div className={`relative overflow-hidden rounded-xl border ${
+      match.result.winner === 'PLAYER1' ? 'border-l-4 border-l-[var(--c-danger)] border-[var(--c-border)]' :
+      match.result.winner === 'PLAYER2' ? 'border-l-4 border-l-[var(--c-piece-black)] border-[var(--c-border)]' :
+      'border border-[var(--c-border)]'
+    } bg-[var(--c-surface)] hover:bg-[var(--c-elevated)]/40 transition-colors`}>
+      <div className="flex items-center justify-between gap-3 px-3 sm:px-4 py-2 border-b border-[var(--c-border)] bg-[var(--c-elevated)]/30">
+        <div className="text-[11px] text-[var(--c-muted)] flex items-center gap-1.5 font-semibold">
+          <Icon name="scroll" size={11} className="text-[var(--c-accent)]" />
           <span>{match.roundLabel}</span>
           {match.bracketSlot && <span className="text-[var(--c-dim)]">· {match.bracketSlot}</span>}
         </div>
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: s.bg, color: s.text }}>
+        <span
+          className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+          style={{ background: s.bg, color: s.text }}
+        >
           {s.label}
         </span>
       </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4 py-4">
         <Player name={match.player1?.nameSnapshot ?? 'BYE'} winner={match.result.winner === 'PLAYER1'} />
-        <div className="text-xs font-bold text-[var(--c-muted)] px-2">VS</div>
+        <div className="flex flex-col items-center px-1">
+          <div className="w-8 h-8 rounded-full bg-[var(--c-elevated-2)] flex items-center justify-center text-[10px] font-black text-[var(--c-muted)] tracking-wider">VS</div>
+        </div>
         <Player name={match.player2?.nameSnapshot ?? 'BYE'} winner={match.result.winner === 'PLAYER2'} align="right" />
       </div>
       {match.result.resultType === 'COMPLETED' && match.result.winner !== 'NONE' && (
-        <div className="mt-3 text-xs text-[var(--c-muted)] text-center">
-          {match.result.winner === 'DRAW' ? 'Hòa' : (
-            <span className="text-[var(--c-success)] font-medium">
-              Thắng: {match.result.winner === 'PLAYER1' ? match.player1?.nameSnapshot : match.player2?.nameSnapshot}
+        <div className="px-3 sm:px-4 py-2.5 border-t border-[var(--c-border)] bg-gradient-to-r from-[var(--c-accent-bg)] to-transparent text-center">
+          {match.result.winner === 'DRAW' ? (
+            <span className="text-xs font-semibold text-[var(--c-muted)] uppercase tracking-wider">Hòa</span>
+          ) : (
+            <span className="text-sm font-bold text-[var(--c-accent)] flex items-center justify-center gap-1.5">
+              <Icon name="trophy" size={12} />
+              {match.result.winner === 'PLAYER1' ? match.player1?.nameSnapshot : match.player2?.nameSnapshot} thắng
             </span>
           )}
         </div>
       )}
-      <div className="mt-3 flex gap-2 justify-end">
+      <div className="px-3 sm:px-4 py-3 border-t border-[var(--c-border)] flex gap-2 justify-end bg-[var(--c-elevated)]/20">
         {match.status === 'SCHEDULED' && isMine && (
           <Button variant="primary" size="sm" onClick={() => onStartMatch(match.matchId)} icon={<Icon name="play" size={12} />}>
             Bắt đầu trận
           </Button>
         )}
         {waitingForOpponent && (
-          <span className="text-xs text-[var(--c-info)] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--c-info-bg)]">
+          <span className="text-xs text-[var(--c-info)] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--c-info-bg)] font-medium">
             <Icon name="info" size={12} />
-            Đang chờ {match.player1?.deviceId === deviceId ? match.player2?.nameSnapshot : match.player1?.nameSnapshot} vào
+            Chờ {match.player1?.deviceId === deviceId ? match.player2?.nameSnapshot : match.player1?.nameSnapshot} vào
           </span>
         )}
         {canJoin && (
@@ -748,13 +761,26 @@ function MatchCard({
 }
 
 function Player({ name, winner, align = 'left' }: { name: string; winner?: boolean; align?: 'left' | 'right' }) {
+  const initial = (name || '?').trim().charAt(0).toUpperCase() || '?'
   return (
-    <div className={`flex items-center gap-2 ${align === 'right' ? 'justify-end' : ''}`}>
-      <div className={`min-w-0 ${align === 'right' ? 'text-right' : ''}`}>
-        <div className={`font-semibold text-sm truncate ${winner ? 'text-[var(--c-success)]' : 'text-[var(--c-text)]'}`}>
+    <div className={`flex items-center gap-2.5 min-w-0 ${align === 'right' ? 'flex-row-reverse justify-end' : ''}`}>
+      <div className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 ${
+        winner
+          ? 'bg-gradient-to-br from-[var(--c-accent)] to-[var(--c-accent-active)] text-[var(--c-accent-text)] shadow-[0_0_12px_rgba(212,168,73,0.5)]'
+          : 'bg-gradient-to-br from-[var(--c-elevated-2)] to-[var(--c-elevated)] text-[var(--c-text)]'
+      }`}>
+        {initial}
+        {winner && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--c-accent)] flex items-center justify-center ring-2 ring-[var(--c-surface)]">
+            <Icon name="trophy" size={9} className="text-[var(--c-accent-text)]" />
+          </span>
+        )}
+      </div>
+      <div className={`min-w-0 flex-1 ${align === 'right' ? 'text-right' : ''}`}>
+        <div className={`font-bold text-sm truncate ${winner ? 'text-[var(--c-accent)]' : 'text-[var(--c-text)]'}`}>
           {name}
         </div>
-        {winner && <div className="text-[10px] text-[var(--c-success)]">Thắng</div>}
+        {winner && <div className="text-[10px] text-[var(--c-accent)] font-semibold uppercase tracking-wider">Thắng</div>}
       </div>
     </div>
   )
@@ -766,24 +792,46 @@ function StandingsList({ list }: { list: Standing[] }) {
   }
   return (
     <div className="divide-y divide-[var(--c-border)]">
-      {list.map(s => (
-        <div key={s.participantId} className="flex items-center gap-3 px-4 py-2.5">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-            s.rank === 1 ? 'bg-gradient-to-br from-[var(--c-accent)] to-[var(--c-accent-active)] text-[var(--c-accent-text)]' :
-            'bg-[var(--c-elevated)] text-[var(--c-muted)]'
-          }`}>
-            {s.rank}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-[var(--c-text)] truncate text-sm">
-              {s.nameSnapshot}
-              {s.isChampion && <span className="ml-2 text-xs text-[var(--c-accent)]">👑</span>}
+      {list.map(s => {
+        const isPodium = s.rank <= 3
+        return (
+          <div
+            key={s.participantId}
+            className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+              s.isChampion ? 'bg-gradient-to-r from-[var(--c-accent)]/15 to-transparent' :
+              isPodium ? 'bg-[var(--c-elevated)]/30' : 'hover:bg-[var(--c-elevated)]/40'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base font-black flex-shrink-0 ${
+              s.rank === 1 ? 'bg-gradient-to-br from-[#fbbf24] to-[#d4a849] text-[#1a1f2e] shadow-[0_0_16px_rgba(212,168,73,0.5)]' :
+              s.rank === 2 ? 'bg-gradient-to-br from-[#c0c5cf] to-[#9ba0a8] text-[#1a1f2e]' :
+              s.rank === 3 ? 'bg-gradient-to-br from-[#cd7f32] to-[#a86b1f] text-white' :
+              'bg-[var(--c-elevated-2)] text-[var(--c-muted)]'
+            }`}>
+              {s.isChampion ? <Icon name="crown" size={18} className="text-[#1a1f2e]" /> : s.rank}
             </div>
-            <div className="text-[11px] text-[var(--c-muted)]">{s.stats.wins}W / {s.stats.draws}D / {s.stats.losses}L</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-[var(--c-text)] truncate text-sm flex items-center gap-1.5">
+                {s.nameSnapshot}
+                {s.isChampion && <span className="text-xs text-[var(--c-accent)]">👑</span>}
+              </div>
+              <div className="text-[11px] text-[var(--c-muted)] flex items-center gap-2">
+                <span className="text-[var(--c-success)] font-semibold">{s.stats.wins}W</span>
+                <span className="text-[var(--c-muted)]">·</span>
+                <span className="text-[var(--c-info)] font-semibold">{s.stats.draws}D</span>
+                <span className="text-[var(--c-muted)]">·</span>
+                <span className="text-[var(--c-danger)] font-semibold">{s.stats.losses}L</span>
+              </div>
+            </div>
+            <div className={`text-right ${
+              s.rank === 1 ? 'text-[var(--c-accent)]' : 'text-[var(--c-text)]'
+            }`}>
+              <div className="text-lg font-black tabular-nums leading-none">{s.stats.points}</div>
+              <div className="text-[10px] text-[var(--c-muted)] uppercase tracking-wider">pts</div>
+            </div>
           </div>
-          <div className="text-sm font-bold text-[var(--c-accent)]">{s.stats.points}Đ</div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

@@ -219,12 +219,12 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
   const positions: { row: number; col: number }[] = []
   for (let r = 0; r < 10; r++) for (let c = 0; c < 9; c++) positions.push({ row: r, col: c })
 
-  // Build piece list keyed by code+position
+  // Build piece list keyed by code (so the same piece keeps its key when it moves)
   const pieceList: Array<{ code: string; row: number; col: number; key: string }> = []
   for (let r = 0; r < 10; r++) {
     for (let c = 0; c < 9; c++) {
       const code = board[r]?.[c]
-      if (code) pieceList.push({ code, row: r, col: c, key: `${code}-${r}-${c}` })
+      if (code) pieceList.push({ code, row: r, col: c, key: code })
     }
   }
 
