@@ -9,7 +9,7 @@ interface MoveHistoryProps {
   moves: MoveRecord[]
 }
 
-const VISIBLE_WINDOW = 40
+const VISIBLE_WINDOW = 60
 
 export default function MoveHistory({ moves }: MoveHistoryProps) {
   const { t } = useI18n()
@@ -30,10 +30,10 @@ export default function MoveHistory({ moves }: MoveHistoryProps) {
     isAutoScrolling.current = atBottom
   }, [])
 
+  // Pair moves: [red, black], [red, black], ...
   const pairs: { pair: [MoveRecord, MoveRecord | null]; index: number }[] = []
   const displayMoves = showAll ? moves : moves.slice(-VISIBLE_WINDOW)
   const startIndex = showAll ? 0 : Math.max(0, moves.length - VISIBLE_WINDOW)
-
   for (let i = 0; i < displayMoves.length; i += 2) {
     pairs.push({
       pair: [displayMoves[i], displayMoves[i + 1] ?? null],
@@ -74,7 +74,7 @@ export default function MoveHistory({ moves }: MoveHistoryProps) {
 
       <div
         id="move-history-list"
-        className="flex-1 overflow-y-auto px-2 py-2 contain-strict"
+        className="flex-1 overflow-y-auto px-1.5 py-1.5 contain-strict"
         onScroll={handleScroll}
       >
         <div className="flex flex-col gap-0.5">
@@ -85,45 +85,38 @@ export default function MoveHistory({ moves }: MoveHistoryProps) {
             return (
               <div
                 key={pairIdx}
-                className={`flex items-center gap-2 py-1 px-1.5 rounded transition-colors ${
-                  isCurrentPair ? 'bg-[var(--c-accent-bg)]' : 'hover:bg-[var(--c-elevated)]/50'
+                className={`flex items-stretch gap-0.5 rounded transition-colors ${
+                  isCurrentPair ? 'bg-[var(--c-accent-bg)]' : 'hover:bg-[var(--c-elevated)]/40'
                 }`}
               >
-                <span className={`w-7 text-right shrink-0 text-xs font-mono tabular-nums ${
+                <span className={`w-7 flex items-center justify-center text-[10px] font-mono tabular-nums shrink-0 ${
                   isCurrentPair ? 'text-[var(--c-accent)] font-bold' : 'text-[var(--c-muted)]'
                 }`}>
                   {pairIdx + 1}.
                 </span>
-                <span
-                  className={`flex-1 px-1.5 py-0.5 rounded text-xs font-mono ${
-                    redGlobalIdx === lastMoveIndex
-                      ? 'text-[var(--c-accent)] font-semibold'
-                      : 'text-[var(--c-danger)]'
-                  }`}
-                >
-                  {red.notation}
-                  {red.isCheck && <span className="text-[var(--c-danger)] ml-0.5 font-bold">+</span>}
-                </span>
-                {black ? (
-                  <span
-                    className={`flex-1 px-1.5 py-0.5 rounded text-xs font-mono ${
-                      blackGlobalIdx === lastMoveIndex
-                        ? 'text-[var(--c-accent)] font-semibold'
-                        : 'text-[var(--c-piece-black)]'
-                    }`}
-                  >
-                    {black.notation}
-                    {black.isCheck && <span className="text-[var(--c-piece-black)] ml-0.5 font-bold">+</span>}
-                  </span>
-                ) : (
-                  <span className="flex-1" />
-                )}
+                <MoveCell move={red} color="red" isLast={redGlobalIdx === lastMoveIndex} />
+                {black && <MoveCell move={black} color="black" isLast={blackGlobalIdx === lastMoveIndex} />}
               </div>
             )
           })}
         </div>
         <div ref={bottomRef} />
       </div>
+    </div>
+  )
+}
+
+function MoveCell({ move, color, isLast }: { move: MoveRecord; color: 'red' | 'black'; isLast: boolean }) {
+  const isRed = color === 'red'
+  return (
+    <div
+      className={`flex-1 px-2 py-1 rounded text-xs font-mono flex items-center gap-1 ${
+        isLast ? 'text-[var(--c-accent)] font-semibold bg-[var(--c-accent)]/10' :
+        isRed ? 'text-[var(--c-danger)]' : 'text-[var(--c-piece-black)]'
+      }`}
+    >
+      <span className="flex-1 truncate">{move.notation}</span>
+      {move.isCheck && <Icon name="lightning" size={10} className="shrink-0" />}
     </div>
   )
 }
