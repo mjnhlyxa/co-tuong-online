@@ -110,9 +110,18 @@ function Piece({ code, targetPos, color, isSelected, isFromLast, isToLast, isInC
           emissiveIntensity={isInCheck ? 0.7 : isSelected ? 0.5 : 0}
         />
       </mesh>
-      {/* Top face (lighter, for engraved look) */}
-      <mesh position={[0, PIECE_H / 2 + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[PIECE_R * 0.85, 32]} />
+      {/* Domed top (slight sphere for engraved look) */}
+      <mesh position={[0, PIECE_H * 0.45, 0]} castShadow>
+        <sphereGeometry args={[PIECE_R * 0.96, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial
+          color={baseColor}
+          metalness={0.45}
+          roughness={0.35}
+        />
+      </mesh>
+      {/* Inner top face with character (slightly raised) */}
+      <mesh position={[0, PIECE_H * 0.47, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[PIECE_R * 0.78, 32]} />
         <meshStandardMaterial color={topColor} metalness={0.25} roughness={0.5} />
       </mesh>
       {/* Chinese character rendered as Canvas texture (most reliable for 3D) */}

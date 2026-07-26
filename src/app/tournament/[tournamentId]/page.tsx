@@ -69,6 +69,7 @@ interface Match {
   startedAt: string | null
   completedAt: string | null
   gameId: string | null
+  startClaimedBy?: string | null
   result: {
     winner: 'PLAYER1' | 'PLAYER2' | 'DRAW' | 'NONE'
     score1: number | null
@@ -220,7 +221,12 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
       })
       const data = await res.json()
       if (res.ok) {
-        router.push(`/game/${data.roomId}`)
+        if (data.status === 'STARTED' && data.gameId) {
+          router.push(`/game/${data.gameId}`)
+        } else if (data.status === 'READY') {
+          // Just mark as waiting, refresh to update UI
+          fetchAll()
+        }
       } else {
         alert(data.error ?? 'Có lỗi xảy ra')
       }
@@ -464,9 +470,21 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
               </div>
             ) : (
               <div className="space-y-2 stagger">
-                {matches.map(match => (
+                {matches.filter(m => m.status !== 'BYE').map(match => (
                   <MatchCard key={match.matchId} match={match} tournamentId={tournamentId} deviceId={deviceId} isHost={isHost} isParticipant={isParticipant} onStartMatch={handleStartMatch} />
                 ))}
+                {matches.filter(m => m.status === 'BYE').length > 0 && (
+                  <details className="text-xs text-[var(--c-muted)] mt-4">
+                    <summary className="cursor-pointer hover:text-[var(--c-text)] py-2 px-3 rounded-lg hover:bg-[var(--c-elevated)]/30">
+                      {matches.filter(m => m.status === 'BYE').length} trận BYE (bỏ qua do lẻ người)
+                    </summary>
+                    <div className="space-y-1 mt-2 pl-3 border-l-2 border-[var(--c-border)]">
+                      {matches.filter(m => m.status === 'BYE').map(match => (
+                        <MatchCard key={match.matchId} match={match} tournamentId={tournamentId} deviceId={deviceId} isHost={isHost} isParticipant={isParticipant} onStartMatch={handleStartMatch} />
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             )}
           </section>
@@ -655,7 +673,11 @@ function MatchCard({
   onStartMatch: (matchId: string) => void
 }) {
   const isMine = isParticipant && (match.player1?.deviceId === deviceId || match.player2?.deviceId === deviceId)
+  const iStarted = isMine && match.startClaimedBy === deviceId
+  const opponentStarted = isMine && match.startClaimedBy && match.startClaimedBy !== deviceId
   const canStart = isMine && (match.status === 'SCHEDULED' || match.status === 'READY')
+  const waitingForOpponent = isMine && match.status === 'READY' && iStarted
+  const canJoin = isMine && match.status === 'READY' && opponentStarted && !iStarted
 
   const statusColors: Record<string, { bg: string; text: string; label: string }> = {
     SCHEDULED: { bg: 'var(--c-elevated)', text: 'var(--c-muted)', label: 'Chờ' },
@@ -694,18 +716,29 @@ function MatchCard({
         </div>
       )}
       <div className="mt-3 flex gap-2 justify-end">
-        {canStart && (
-          <Button variant="primary" size="sm" onClick={() => onStartMatch(match.matchId)}>
+        {match.status === 'SCHEDULED' && isMine && (
+          <Button variant="primary" size="sm" onClick={() => onStartMatch(match.matchId)} icon={<Icon name="play" size={12} />}>
             Bắt đầu trận
           </Button>
         )}
+        {waitingForOpponent && (
+          <span className="text-xs text-[var(--c-info)] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--c-info-bg)]">
+            <Icon name="info" size={12} />
+            Đang chờ {match.player1?.deviceId === deviceId ? match.player2?.nameSnapshot : match.player1?.nameSnapshot} vào
+          </span>
+        )}
+        {canJoin && (
+          <Button variant="primary" size="sm" onClick={() => onStartMatch(match.matchId)} icon={<Icon name="play" size={12} />}>
+            Vào trận
+          </Button>
+        )}
         {match.status === 'STARTED' && match.gameId && isMine && (
-          <Button variant="primary" size="sm" onClick={() => window.location.href = `/game/${match.gameId}`}>
+          <Button variant="primary" size="sm" onClick={() => window.location.href = `/game/${match.gameId}`} icon={<Icon name="play" size={12} />}>
             Vào trận
           </Button>
         )}
         {match.status === 'STARTED' && match.gameId && !isMine && (
-          <Button variant="secondary" size="sm" onClick={() => window.location.href = `/game/${match.gameId}`}>
+          <Button variant="secondary" size="sm" onClick={() => window.location.href = `/game/${match.gameId}`} icon={<Icon name="eye" size={12} />}>
             Theo dõi
           </Button>
         )}
