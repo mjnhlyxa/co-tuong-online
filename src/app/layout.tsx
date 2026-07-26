@@ -28,6 +28,9 @@ export const metadata: Metadata = {
   creator: 'Cờ Tướng Online',
   publisher: 'Cờ Tướng Online',
   category: 'games',
+  applicationName: 'Cờ Tướng Online',
+  generator: 'Next.js',
+  referrer: 'origin-when-cross-origin',
   robots: {
     index: true,
     follow: true,
@@ -40,6 +43,16 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: '/',
+    languages: {
+      'vi': '/',
+      'en': '/',
+      'zh-CN': '/',
+      'ko': '/',
+      'ru': '/',
+      'fr': '/',
+      'de': '/',
+      'pt-BR': '/',
+    },
   },
   openGraph: {
     type: 'website',
