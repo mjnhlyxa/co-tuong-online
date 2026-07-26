@@ -11,9 +11,9 @@ import '@fontsource/noto-sans-sc/400.css'
 import '@fontsource/noto-sans-sc/700.css'
 
 const CELL = 1.0
-const PAD = 0.6
-const PIECE_R = 0.46
-const PIECE_H = 0.18
+const PAD = 0.5
+const PIECE_R = 0.42
+const PIECE_H = 0.16
 const ANIM_SPEED = 0.12  // 0.12 per frame at 60fps → ~500ms travel
 
 const PIECE_LABEL: Record<string, string> = {
@@ -180,51 +180,83 @@ function RiverTexture() {
 }
 
 function BoardBase() {
-  // Edge dots positions and line material
-  const linesMaterial = useMemo(() => new THREE.LineBasicMaterial({ color: '#3a2a14' }), [])
-  const gridLines = useMemo(() => {
-    const points: THREE.Vector3[] = []
-    // 10 horizontal lines
-    for (let r = 0; r < 10; r++) {
-      const z = (r - 4.5) * CELL
-      points.push(new THREE.Vector3(-4 * CELL, 0.001, z))
-      points.push(new THREE.Vector3(4 * CELL, 0.001, z))
+  // Generate grid lines as thin boxes (more visible than LineBasicMaterial)
+  const lineW = 0.022
+  const lineH = 0.008
+  const lineMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#3a2a14', roughness: 0.6 }), [])
+  const palaceLineMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#5a3814', roughness: 0.6 }), [])
+
+  const lines: React.ReactElement[] = []
+  // 10 horizontal lines
+  for (let r = 0; r < 10; r++) {
+    const z = (r - 4.5) * CELL
+    lines.push(
+      <mesh key={`hr${r}`} position={[0, lineH / 2, z]} material={lineMat}>
+        <boxGeometry args={[8 * CELL + lineW, lineH, lineW]} />
+      </mesh>
+    )
+  }
+  // 9 vertical lines (broken at river)
+  for (let c = 0; c < 9; c++) {
+    const x = (c - 4) * CELL
+    if (c === 0 || c === 8) {
+      lines.push(
+        <mesh key={`vc${c}`} position={[x, lineH / 2, 0]} material={lineMat}>
+          <boxGeometry args={[lineW, lineH, 9 * CELL + lineW]} />
+        </mesh>
+      )
+    } else {
+      // Top half
+      lines.push(
+        <mesh key={`vc${c}-t`} position={[x, lineH / 2, -2.5 * CELL]} material={lineMat}>
+          <boxGeometry args={[lineW, lineH, 4 * CELL + lineW]} />
+        </mesh>
+      )
+      // Bottom half
+      lines.push(
+        <mesh key={`vc${c}-b`} position={[x, lineH / 2, 2.5 * CELL]} material={lineMat}>
+          <boxGeometry args={[lineW, lineH, 4 * CELL + lineW]} />
+        </mesh>
+      )
     }
-    // 9 vertical lines (broken at river)
-    for (let c = 0; c < 9; c++) {
-      const x = (c - 4) * CELL
-      points.push(new THREE.Vector3(x, 0.001, -4.5 * CELL))
-      points.push(new THREE.Vector3(x, 0.001, -0.5 * CELL))
-      points.push(new THREE.Vector3(x, 0.001, 0.5 * CELL))
-      points.push(new THREE.Vector3(x, 0.001, 4.5 * CELL))
-    }
-    // Palace diagonals (top)
-    points.push(new THREE.Vector3(-CELL, 0.001, -4.5 * CELL))
-    points.push(new THREE.Vector3(CELL, 0.001, -2.5 * CELL))
-    points.push(new THREE.Vector3(CELL, 0.001, -4.5 * CELL))
-    points.push(new THREE.Vector3(-CELL, 0.001, -2.5 * CELL))
-    // Palace diagonals (bottom)
-    points.push(new THREE.Vector3(-CELL, 0.001, 2.5 * CELL))
-    points.push(new THREE.Vector3(CELL, 0.001, 4.5 * CELL))
-    points.push(new THREE.Vector3(CELL, 0.001, 2.5 * CELL))
-    points.push(new THREE.Vector3(-CELL, 0.001, 4.5 * CELL))
-    return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), linesMaterial)
-  }, [linesMaterial])
+  }
+  // Palace diagonals
+  const diagonals: Array<[number, number, number, number]> = [
+    [-CELL, -4.5 * CELL, CELL, -2.5 * CELL],
+    [CELL, -4.5 * CELL, -CELL, -2.5 * CELL],
+    [-CELL, 2.5 * CELL, CELL, 4.5 * CELL],
+    [CELL, 2.5 * CELL, -CELL, 4.5 * CELL],
+  ]
+  diagonals.forEach(([x1, z1, x2, z2], i) => {
+    const dx = x2 - x1, dz = z2 - z1
+    const length = Math.sqrt(dx * dx + dz * dz)
+    const angle = Math.atan2(dz, dx)
+    lines.push(
+      <mesh
+        key={`diag${i}`}
+        position={[(x1 + x2) / 2, lineH / 2, (z1 + z2) / 2]}
+        rotation={[0, -angle, 0]}
+        material={palaceLineMat}
+      >
+        <boxGeometry args={[length + lineW, lineH, lineW]} />
+      </mesh>
+    )
+  })
 
   return (
     <group>
       {/* Board base (dark frame) */}
       <mesh receiveShadow position={[0, -0.05, 0]}>
-        <boxGeometry args={[10 * CELL + 0.4, 0.08, 11 * CELL + 0.4]} />
+        <boxGeometry args={[10 * CELL + 0.6, 0.1, 11 * CELL + 0.6]} />
         <meshStandardMaterial color="#5a3814" roughness={0.85} />
       </mesh>
-      {/* Board surface */}
-      <mesh receiveShadow position={[0, 0, 0]}>
-        <boxGeometry args={[9 * CELL, 0.02, 10 * CELL]} />
+      {/* Board surface - thicker for depth */}
+      <mesh receiveShadow position={[0, 0.01, 0]}>
+        <boxGeometry args={[9 * CELL, 0.03, 10 * CELL]} />
         <meshStandardMaterial color="#d8b878" roughness={0.7} metalness={0.05} />
       </mesh>
       {/* Grid lines */}
-      <primitive object={gridLines} />
+      {lines}
       {/* Edge dots (small gold dots) */}
       {EDGE_DOTS.map(([r, c], i) => {
         // x: col, z: row
@@ -372,7 +404,7 @@ export default function Board3D({ board, myColor, currentTurn, lastMove, isInChe
     <div className="relative w-full" style={{ aspectRatio: '9/10' }}>
       <Canvas
         shadows
-        camera={{ position: [0, 13, 0.4], fov: 32 }}
+        camera={{ position: [0, 14, 1], fov: 38 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
