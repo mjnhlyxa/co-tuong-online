@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit, JetBrains_Mono, Noto_Serif_SC } from 'next/font/google'
 import './globals.css'
+import ToastContainer from '@/components/ui/Toast'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' })
@@ -110,7 +111,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="h-full antialiased min-h-screen">{children}</body>
+      <body className="h-full antialiased min-h-screen">{children}<ToastContainer /></body>
     </html>
   )
 }

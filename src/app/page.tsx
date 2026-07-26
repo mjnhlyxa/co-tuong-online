@@ -48,17 +48,9 @@ export default function LobbyPage() {
   const [leaderboardOffset, setLeaderboardOffset] = useState(0)
 
   const [regName, setRegName] = useState('')
-  const [regLang, setRegLang] = useState<Language>('vi')
-  const regLangInitRef = useRef(false)
+  const [regLang, setRegLang] = useState<Language>(language as Language)
   const [regError, setRegError] = useState('')
   const [regLoading, setRegLoading] = useState(false)
-
-  useEffect(() => {
-    if (!regLangInitRef.current) {
-      setRegLang(language)
-      regLangInitRef.current = true
-    }
-  }, [language])
 
   const [showCreate, setShowCreate] = useState(false)
   const [roomType, setRoomType] = useState<'public' | 'private'>('public')
@@ -322,7 +314,7 @@ export default function LobbyPage() {
                   variant="primary"
                   size="lg"
                   onClick={() => setShowCreate(true)}
-                  disabled={!player}
+                  disabled={!player?.name}
                   icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>}
                 >
                   {t('createRoom')}
@@ -331,7 +323,7 @@ export default function LobbyPage() {
                   variant="secondary"
                   size="lg"
                   onClick={() => setShowJoin(true)}
-                  disabled={!player}
+                  disabled={!player?.name}
                   icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}
                 >
                   {t('joinByCode')}
@@ -340,7 +332,7 @@ export default function LobbyPage() {
                   variant="gold"
                   size="lg"
                   onClick={() => setShowCreateTournament(true)}
-                  disabled={!player}
+                  disabled={!player?.name}
                   icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M10 22c0-2 1-4 3-4s3 2 3 4M7 9v4a2 2 0 002 2h6a2 2 0 002-2V9M5 9h14"/></svg>}
                 >
                   Tạo giải đấu

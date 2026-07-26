@@ -5,9 +5,9 @@ import { getLegalMoves } from '@/lib/xiangqi/rules'
 import { PIECE_CHARS } from '@/lib/xiangqi/notation'
 import type { BoardState, Position, Color, MoveRecord } from '@/types'
 
-const CELL = 60
-const PADDING = 36
-const PIECE_R = 24
+const CELL = 64
+const PADDING = 40
+const PIECE_R = 28
 const BOARD_W = 8 * CELL + 2 * PADDING
 const BOARD_H = 9 * CELL + 2 * PADDING
 

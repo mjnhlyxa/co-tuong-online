@@ -343,12 +343,12 @@ export default function GamePage({ params }: { params: Params }) {
         {/* Board area */}
         <div className="flex flex-col flex-1 items-center px-2 py-1 sm:py-3 gap-1 sm:gap-2 overflow-auto">
           {/* Opponent panel (top) */}
-          <div className="w-full max-w-[640px]">
+          <div className="w-full max-w-[720px]">
             <PlayerPanel game={playingGame} color={topColor} position="top" isMyColor={false} />
           </div>
 
-          {/* Board - bigger now (max-w-[640px] to fill more screen) */}
-          <div className="flex-shrink-0 w-full max-w-[640px] relative">
+          {/* Board - bigger now (max-w-[720px] to fill more screen) */}
+          <div className="flex-shrink-0 w-full max-w-[720px] relative">
             {use3D ? (
               <Board3D
                 board={playingGame.boardState}
@@ -391,7 +391,7 @@ export default function GamePage({ params }: { params: Params }) {
           </div>
 
           {/* My panel (bottom) */}
-          <div className="w-full max-w-[640px]">
+          <div className="w-full max-w-[720px]">
             <PlayerPanel game={playingGame} color={bottomColor} position="bottom" isMyColor={!!myColor} />
           </div>
 
