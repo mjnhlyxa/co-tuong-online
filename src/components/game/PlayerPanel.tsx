@@ -57,72 +57,89 @@ export default function PlayerPanel({ game, color, position, isMyColor }: Player
 
   const captured = computeCaptured(game.boardState)
   const myCaptures = color === 'red' ? captured.black : captured.red
+  const isRed = color === 'red'
 
   return (
     <div
       className={clsx(
-        'relative flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 rounded-xl transition-all duration-300',
+        'relative flex items-stretch gap-0 rounded-xl transition-all duration-300 overflow-hidden',
         isCurrentTurn
-          ? 'bg-[var(--c-accent-bg)] border-2 border-[var(--c-accent)]/50 shadow-[0_0_0_4px_var(--c-accent-bg)]'
-          : resultState
-          ? resultState === 'win'
-            ? 'bg-[var(--c-success-bg)] border-2 border-[var(--c-success)]/30'
-            : resultState === 'loss'
-            ? 'bg-[var(--c-danger-bg)] border-2 border-[var(--c-danger)]/30'
-            : 'bg-[var(--c-elevated)] border-2 border-[var(--c-border)]'
-          : 'bg-[var(--c-surface)] border-2 border-[var(--c-border)]/50'
+          ? 'shadow-[0_0_0_2px_var(--c-accent),0_0_24px_-4px_var(--c-accent-glow)]'
+          : resultState === 'win'
+          ? 'shadow-[0_0_0_1.5px_var(--c-success)]'
+          : resultState === 'loss'
+          ? 'shadow-[0_0_0_1.5px_var(--c-danger)]'
+          : 'shadow-[0_0_0_1px_var(--c-border)]'
       )}
     >
-      <div className="relative shrink-0">
-        <Avatar name={player?.name ?? '?'} color={color} size="md" ring={false} />
-        <div className={clsx(
-          'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2',
-          isCurrentTurn ? 'bg-[var(--c-accent)] border-[var(--c-accent-bg)] animate-pulse' : 'bg-[var(--c-success)] border-[var(--c-surface)]'
-        )} />
-      </div>
+      {/* Color side indicator (left) */}
+      <div
+        className={clsx(
+          'w-1.5 shrink-0',
+          isRed ? 'bg-gradient-to-b from-[#dc2626] to-[#991b1b]' : 'bg-gradient-to-b from-[#3a3f50] to-[#1a1f2e]',
+          isCurrentTurn && 'shadow-[0_0_8px_currentColor]'
+        )}
+        style={{ color: isRed ? '#dc2626' : '#3a3f50' }}
+      />
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className={clsx(
-            'text-sm font-semibold truncate',
-            isMyColor ? 'text-[var(--c-accent)]' : 'text-[var(--c-text)]'
-          )}>
-            {player?.name ?? '...'}
-            {isMyColor && <span className="text-[10px] font-normal text-[var(--c-muted)] ml-1">(Bạn)</span>}
-          </span>
-          <Badge tier={tier} elo={elo} />
-          {isCurrentTurn && (
-            <span className="text-[10px] font-semibold text-[var(--c-accent)] uppercase tracking-wider flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-[var(--c-accent)] animate-pulse" />
-              {isMyColor ? 'Lượt bạn' : (color === 'red' ? 'Đỏ' : 'Đen')}
+      <div className={clsx(
+        'flex-1 flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5',
+        isCurrentTurn ? 'bg-[var(--c-accent-bg)]' :
+        resultState === 'win' ? 'bg-[var(--c-success-bg)]' :
+        resultState === 'loss' ? 'bg-[var(--c-danger-bg)]' :
+        'bg-[var(--c-surface)]'
+      )}>
+        <div className="relative shrink-0">
+          <Avatar name={player?.name ?? '?'} color={color} size="md" ring={false} />
+          <div className={clsx(
+            'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2',
+            isCurrentTurn ? 'bg-[var(--c-accent)] border-[var(--c-accent-bg)] animate-pulse' : 'bg-[var(--c-success)] border-[var(--c-surface)]'
+          )} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={clsx(
+              'text-sm font-bold truncate',
+              isMyColor ? 'text-[var(--c-accent)]' : 'text-[var(--c-text)]'
+            )}>
+              {player?.name ?? '...'}
+              {isMyColor && <span className="text-[10px] font-normal text-[var(--c-muted)] ml-1">(Bạn)</span>}
             </span>
-          )}
-          {resultState === 'win' && (
-            <span className="text-[10px] font-semibold text-[var(--c-success)] uppercase tracking-wider flex items-center gap-1">
-              <Icon name="trophy" size={10} /> Thắng
-            </span>
-          )}
-          {resultState === 'loss' && (
-            <span className="text-[10px] font-semibold text-[var(--c-danger)] uppercase tracking-wider">Thua</span>
-          )}
-          {resultState === 'draw' && (
-            <span className="text-[10px] font-semibold text-[var(--c-muted)] uppercase tracking-wider">Hòa</span>
+            <Badge tier={tier} elo={elo} />
+            {isCurrentTurn && (
+              <span className="text-[10px] font-bold text-[var(--c-accent)] uppercase tracking-wider flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--c-accent)] animate-pulse" />
+                {isMyColor ? 'Lượt bạn' : (color === 'red' ? 'Đỏ' : 'Đen')}
+              </span>
+            )}
+            {resultState === 'win' && (
+              <span className="text-[10px] font-bold text-[var(--c-success)] uppercase tracking-wider flex items-center gap-1">
+                <Icon name="trophy" size={10} /> Thắng
+              </span>
+            )}
+            {resultState === 'loss' && (
+              <span className="text-[10px] font-bold text-[var(--c-danger)] uppercase tracking-wider">Thua</span>
+            )}
+            {resultState === 'draw' && (
+              <span className="text-[10px] font-bold text-[var(--c-muted)] uppercase tracking-wider">Hòa</span>
+            )}
+          </div>
+          {myCaptures.length > 0 && (
+            <div className="mt-1 flex items-center gap-1">
+              <span className="text-[9px] text-[var(--c-muted)] uppercase tracking-wider font-bold shrink-0">Đã ăn</span>
+              <CapturedPieces codes={myCaptures} color={color} size="sm" />
+            </div>
           )}
         </div>
-        {myCaptures.length > 0 && (
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <span className="text-[9px] text-[var(--c-muted)] uppercase tracking-wider font-semibold shrink-0">Đã ăn</span>
-            <CapturedPieces codes={myCaptures} color={color} size="sm" />
-          </div>
-        )}
-      </div>
 
-      <div className="flex-shrink-0">
-        <Timer
-          timeRemainingMs={game.timeControl ? game.timeRemaining?.[color] ?? null : null}
-          isActive={isCurrentTurn}
-          lastMoveAt={game.lastMoveAt ?? null}
-        />
+        <div className="flex-shrink-0">
+          <Timer
+            timeRemainingMs={game.timeControl ? game.timeRemaining?.[color] ?? null : null}
+            isActive={isCurrentTurn}
+            lastMoveAt={game.lastMoveAt ?? null}
+          />
+        </div>
       </div>
     </div>
   )
