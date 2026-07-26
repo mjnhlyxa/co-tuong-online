@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Badge from '@/components/ui/Badge'
+import Icon from '@/components/ui/Icon'
 import { usePlayer } from '@/hooks/usePlayer'
 
 interface Tournament {
@@ -139,9 +140,11 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
 
   async function handleJoin() {
     if (!deviceId) return
+    // If user already has account, use existing name without asking
     const name = joinName.trim() || player?.name || ''
     if (name.length < 2) {
-      setJoinError('Nhập tên để tham gia')
+      // Only show modal if user truly has no name
+      setShowJoin(true)
       return
     }
     setJoining(true)
@@ -164,6 +167,15 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
       setJoinError('Có lỗi xảy ra')
     } finally {
       setJoining(false)
+    }
+  }
+
+  // Quick join for users with existing account
+  function quickJoin() {
+    if (!player?.name) {
+      setShowJoin(true)
+    } else {
+      handleJoin()
     }
   }
 
@@ -294,7 +306,7 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
                 Sao chép link
               </Button>
               {tournament.status === 'OPEN' && !isParticipant && player && (
-                <Button variant="primary" size="md" onClick={() => setShowJoin(true)}>
+                <Button variant="primary" size="md" onClick={quickJoin} icon={<Icon name="plus" size={14} />}>
                   Tham gia
                 </Button>
               )}
@@ -431,7 +443,7 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
                 <div className="glass rounded-xl p-5 border border-[var(--c-accent)]/30 bg-gradient-to-br from-[var(--c-accent-bg)] to-transparent">
                   <h3 className="font-bold text-[var(--c-text)] mb-1">Sẵn sàng tham gia?</h3>
                   <p className="text-xs text-[var(--c-muted)] mb-3">Chỉ cần bấm tham gia để đăng ký</p>
-                  <Button variant="primary" fullWidth onClick={() => setShowJoin(true)}>
+                  <Button variant="primary" fullWidth onClick={quickJoin} icon={<Icon name="plus" size={14} />}>
                     Tham gia giải
                   </Button>
                 </div>
@@ -575,24 +587,26 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
       </main>
 
       {/* Join modal */}
-      <Modal open={showJoin} onClose={() => setShowJoin(false)} title="Tham gia giải đấu">
+      <Modal open={showJoin} onClose={() => setShowJoin(false)} title="Tham gia giải đấu" description={player?.name ? `Với tên "${player.name}"` : 'Nhập tên để tham gia'}>
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-[var(--c-text)] mb-2 uppercase tracking-wider">Tên hiển thị</label>
-            <input
-              value={joinName}
-              onChange={e => { setJoinName(e.target.value); setJoinError('') }}
-              onKeyDown={e => e.key === 'Enter' && handleJoin()}
-              placeholder={player?.name ?? 'Tên của bạn'}
-              maxLength={16}
-              autoFocus
-              className="w-full bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-xl px-4 py-3 text-[var(--c-text)] placeholder-[var(--c-dim)] focus:outline-none focus:border-[var(--c-accent)] text-sm"
-            />
-            {joinError && <p className="text-[var(--c-danger)] text-xs mt-2">{joinError}</p>}
-          </div>
+          {!player?.name && (
+            <div>
+              <label className="block text-xs font-semibold text-[var(--c-text)] mb-2 uppercase tracking-wider">Tên hiển thị</label>
+              <input
+                value={joinName}
+                onChange={e => { setJoinName(e.target.value); setJoinError('') }}
+                onKeyDown={e => e.key === 'Enter' && handleJoin()}
+                placeholder="Tên của bạn"
+                maxLength={16}
+                autoFocus
+                className="w-full bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-xl px-4 py-3 text-[var(--c-text)] placeholder-[var(--c-dim)] focus:outline-none focus:border-[var(--c-accent)] text-sm"
+              />
+              {joinError && <p className="text-[var(--c-danger)] text-xs mt-2">{joinError}</p>}
+            </div>
+          )}
           <div className="flex gap-2">
             <Button variant="secondary" fullWidth onClick={() => setShowJoin(false)}>Hủy</Button>
-            <Button variant="primary" fullWidth loading={joining} onClick={handleJoin}>Tham gia</Button>
+            <Button variant="primary" fullWidth loading={joining} onClick={handleJoin} icon={<Icon name="check" size={14} />}>Tham gia</Button>
           </div>
         </div>
       </Modal>

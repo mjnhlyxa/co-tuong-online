@@ -20,73 +20,109 @@ interface GameSidebarProps {
   t: (key: string) => string
 }
 
-type Tab = 'moves' | 'chat' | 'spectators'
-
-const TABS: { id: Tab; label: string; icon: IconName }[] = [
-  { id: 'moves', label: 'Nước đi', icon: 'scroll' },
-  { id: 'chat', label: 'Chat', icon: 'chat' },
-  { id: 'spectators', label: 'Người xem', icon: 'users' },
-]
-
+/**
+ * Sidebar with 3 visible sections:
+ * - Spectators (top, compact)
+ * - Moves (middle, large, scrollable)
+ * - Chat (bottom, compact)
+ * All visible at once — no tabs needed
+ */
 export default function GameSidebar({
   messages, spectators, moves, mutedDeviceIds, isHost, deviceId, onSend, onMute, t,
 }: GameSidebarProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('moves')
-
   return (
-    <div className="flex flex-col h-full bg-[var(--c-surface)]">
-      {/* Tabs */}
-      <div className="flex border-b border-[var(--c-border)] shrink-0">
-        {TABS.map(tab => {
-          const isActive = activeTab === tab.id
-          const count =
-            tab.id === 'moves' ? moves.length :
-            tab.id === 'chat' ? messages.length :
-            spectators.length
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={clsx(
-                'flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors relative',
-                isActive
-                  ? 'text-[var(--c-accent)]'
-                  : 'text-[var(--c-muted)] hover:text-[var(--c-text)] hover:bg-[var(--c-elevated)]/30'
-              )}
-            >
-              <Icon name={tab.icon} size={15} />
-              <span>{tab.label}</span>
-              {count > 0 && (
-                <span className={clsx(
-                  'text-[10px] px-1.5 rounded-full font-bold tabular-nums',
-                  isActive
-                    ? 'bg-[var(--c-accent)] text-[var(--c-accent-text)]'
-                    : 'bg-[var(--c-elevated)] text-[var(--c-muted)]'
-                )}>
-                  {count}
-                </span>
-              )}
-              {isActive && <span className="absolute bottom-0 inset-x-3 h-0.5 bg-[var(--c-accent)] rounded-t" />}
-            </button>
-          )
-        })}
-      </div>
+    <div className="flex flex-col h-full bg-[var(--c-surface)] overflow-hidden">
+      {/* Spectators - top compact strip */}
+      <Section
+        icon="users"
+        title="Người xem"
+        count={spectators.length}
+        collapsible
+        defaultOpen={false}
+        maxHeight="140px"
+      >
+        <SpectatorList spectators={spectators} />
+      </Section>
 
-      {/* Active panel */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === 'moves' && <MoveHistory moves={moves} />}
-        {activeTab === 'chat' && (
-          <ChatPanel
-            messages={messages}
-            deviceId={deviceId}
-            mutedDeviceIds={mutedDeviceIds}
-            isHost={isHost}
-            onSend={onSend}
-            onMute={onMute}
+      {/* Moves - main area, scrollable */}
+      <Section
+        icon="scroll"
+        title="Nước đi"
+        count={moves.length}
+        className="flex-1 min-h-0"
+        bodyClassName="overflow-y-auto contain-strict"
+      >
+        <MoveHistory moves={moves} />
+      </Section>
+
+      {/* Chat - bottom */}
+      <Section
+        icon="chat"
+        title="Chat"
+        count={messages.length}
+        collapsible
+        defaultOpen
+        maxHeight="40%"
+      >
+        <ChatPanel
+          messages={messages}
+          deviceId={deviceId}
+          mutedDeviceIds={mutedDeviceIds}
+          isHost={isHost}
+          onSend={onSend}
+          onMute={onMute}
+        />
+      </Section>
+    </div>
+  )
+}
+
+function Section({
+  icon, title, count, children, className = '', bodyClassName = '', collapsible = false, defaultOpen = true, maxHeight,
+}: {
+  icon: IconName
+  title: string
+  count?: number
+  children: ReactNode
+  className?: string
+  bodyClassName?: string
+  collapsible?: boolean
+  defaultOpen?: boolean
+  maxHeight?: string
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className={clsx('flex flex-col border-b border-[var(--c-border)] last:border-b-0', className)}>
+      <button
+        onClick={() => collapsible && setOpen(o => !o)}
+        className={clsx(
+          'flex items-center gap-2 px-3 py-2 text-sm font-semibold text-[var(--c-text)] shrink-0',
+          collapsible ? 'cursor-pointer hover:bg-[var(--c-elevated)]/30' : 'cursor-default'
+        )}
+      >
+        <Icon name={icon} size={14} className="text-[var(--c-accent)]" />
+        <span>{title}</span>
+        {count !== undefined && count > 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--c-accent-bg)] text-[var(--c-accent)] font-bold tabular-nums">
+            {count}
+          </span>
+        )}
+        {collapsible && (
+          <Icon
+            name={open ? 'arrow-right' : 'arrow-left'}
+            size={12}
+            className={clsx('ml-auto text-[var(--c-muted)] transition-transform', !open && 'rotate-90')}
           />
         )}
-        {activeTab === 'spectators' && <SpectatorList spectators={spectators} />}
-      </div>
+      </button>
+      {open && (
+        <div
+          className={clsx('flex-1 min-h-0', bodyClassName)}
+          style={maxHeight && !className.includes('flex-1') ? { maxHeight, minHeight: 0 } : undefined}
+        >
+          {children}
+        </div>
+      )}
     </div>
   )
 }
