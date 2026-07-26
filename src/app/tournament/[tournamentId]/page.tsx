@@ -470,16 +470,16 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
               </div>
             ) : (
               <div className="space-y-2 stagger">
-                {matches.filter(m => m.status !== 'BYE').map(match => (
+                {matches.filter(m => m.status !== 'BYE' && m.result.resultType !== 'BYE' && m.player2 !== null).map(match => (
                   <MatchCard key={match.matchId} match={match} tournamentId={tournamentId} deviceId={deviceId} isHost={isHost} isParticipant={isParticipant} onStartMatch={handleStartMatch} />
                 ))}
-                {matches.filter(m => m.status === 'BYE').length > 0 && (
+                {matches.filter(m => m.status === 'BYE' || m.result.resultType === 'BYE' || m.player2 === null).length > 0 && (
                   <details className="text-xs text-[var(--c-muted)] mt-4">
                     <summary className="cursor-pointer hover:text-[var(--c-text)] py-2 px-3 rounded-lg hover:bg-[var(--c-elevated)]/30">
-                      {matches.filter(m => m.status === 'BYE').length} trận BYE (bỏ qua do lẻ người)
+                      {matches.filter(m => m.status === 'BYE' || m.result.resultType === 'BYE' || m.player2 === null).length} trận BYE (bỏ qua do lẻ người)
                     </summary>
                     <div className="space-y-1 mt-2 pl-3 border-l-2 border-[var(--c-border)]">
-                      {matches.filter(m => m.status === 'BYE').map(match => (
+                      {matches.filter(m => m.status === 'BYE' || m.result.resultType === 'BYE' || m.player2 === null).map(match => (
                         <MatchCard key={match.matchId} match={match} tournamentId={tournamentId} deviceId={deviceId} isHost={isHost} isParticipant={isParticipant} onStartMatch={handleStartMatch} />
                       ))}
                     </div>

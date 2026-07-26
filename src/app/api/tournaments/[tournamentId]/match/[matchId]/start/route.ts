@@ -4,19 +4,7 @@ import { connectDB } from '@/lib/mongodb'
 import { Tournament, TournamentMatch } from '@/models/Tournament'
 import { Room } from '@/models/Room'
 import { Game } from '@/models/Game'
-
-const INITIAL_BOARD = [
-  ['b-ju', null, null, 'b-xiang', null, 'b-ju', null, null, 'b-ju'],
-  [null, 'b-ma', null, null, null, null, null, 'b-ma', null],
-  ['b-pao', null, null, null, 'b-jiang', null, null, null, 'b-pao'],
-  ['b-zu', null, 'b-zu', null, 'b-zu', null, 'b-zu', null, 'b-zu'],
-  [null, null, null, null, null, null, null, null, null],
-  [null, null, null, null, null, null, null, null, null],
-  ['r-zu', null, 'r-zu', null, 'r-zu', null, 'r-zu', null, 'r-zu'],
-  ['r-pao', null, null, null, 'r-jiang', null, null, null, 'r-pao'],
-  [null, 'r-ma', null, null, null, null, null, 'r-ma', null],
-  ['r-ju', null, null, 'r-xiang', null, 'r-ju', null, null, 'r-ju'],
-]
+import { getInitialBoard } from '@/lib/xiangqi/board'
 
 /**
  * Match start flow (NEW):
@@ -128,7 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tou
         status: 'playing',
         currentTurn: 'red',
         currentMoveNumber: 0,
-        boardState: INITIAL_BOARD,
+        boardState: getInitialBoard(),
         moves: [],
         timeControl: timeControlMs,
         timeRemaining: { red: timeControlMs ?? 0, black: timeControlMs ?? 0 },
