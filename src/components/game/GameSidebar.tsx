@@ -20,31 +20,22 @@ interface GameSidebarProps {
   t: (key: string) => string
 }
 
-/**
- * Sidebar with 3 visible sections:
- * - Spectators (top, compact)
- * - Moves (middle, large, scrollable)
- * - Chat (bottom, compact)
- * All visible at once — no tabs needed
- */
 export default function GameSidebar({
   messages, spectators, moves, mutedDeviceIds, isHost, deviceId, onSend, onMute, t,
 }: GameSidebarProps) {
   return (
     <div className="flex flex-col h-full bg-[var(--c-surface)] overflow-hidden">
-      {/* Spectators - top compact strip */}
       <Section
         icon="users"
         title="Người xem"
         count={spectators.length}
         collapsible
         defaultOpen={false}
-        maxHeight="140px"
+        maxHeight="120px"
       >
         <SpectatorList spectators={spectators} />
       </Section>
 
-      {/* Moves - main area, scrollable */}
       <Section
         icon="scroll"
         title="Nước đi"
@@ -55,7 +46,6 @@ export default function GameSidebar({
         <MoveHistory moves={moves} />
       </Section>
 
-      {/* Chat - bottom */}
       <Section
         icon="chat"
         title="Chat"
@@ -92,26 +82,26 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className={clsx('flex flex-col border-b border-[var(--c-border)] last:border-b-0', className)}>
+    <div className={clsx('flex flex-col border-b border-[var(--c-border)] last:border-b-0 shrink-0', className)}>
       <button
         onClick={() => collapsible && setOpen(o => !o)}
         className={clsx(
-          'flex items-center gap-2 px-3 py-2 text-sm font-semibold text-[var(--c-text)] shrink-0',
-          collapsible ? 'cursor-pointer hover:bg-[var(--c-elevated)]/30' : 'cursor-default'
+          'flex items-center gap-2 px-3 py-2 text-sm font-semibold text-[var(--c-text)] shrink-0 select-none',
+          collapsible ? 'cursor-pointer hover:bg-[var(--c-elevated)]/40 transition-colors' : 'cursor-default'
         )}
       >
-        <Icon name={icon} size={14} className="text-[var(--c-accent)]" />
+        <Icon name={icon} size={13} className="text-[var(--c-accent)]" />
         <span>{title}</span>
         {count !== undefined && count > 0 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--c-accent-bg)] text-[var(--c-accent)] font-bold tabular-nums">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--c-accent)] text-[var(--c-accent-text)] font-bold tabular-nums">
             {count}
           </span>
         )}
         {collapsible && (
           <Icon
-            name={open ? 'arrow-right' : 'arrow-left'}
-            size={12}
-            className={clsx('ml-auto text-[var(--c-muted)] transition-transform', !open && 'rotate-90')}
+            name="arrow-right"
+            size={11}
+            className={clsx('ml-auto text-[var(--c-muted)] transition-transform', !open && '-rotate-90')}
           />
         )}
       </button>
