@@ -3,7 +3,6 @@
 import { use, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Board from '@/components/game/Board'
-import Board3D from '@/components/game/Board3D'
 import PlayerPanel from '@/components/game/PlayerPanel'
 import MoveHistory from '@/components/game/MoveHistory'
 import GameSidebar from '@/components/game/GameSidebar'
@@ -37,7 +36,6 @@ export default function GamePage({ params }: { params: Params }) {
   const [resignConfirm, setResignConfirm] = useState(false)
   const [showTakebackRejected, setShowTakebackRejected] = useState(false)
   const prevTakebackStatusRef = useRef<string | null>(null)
-  const [use3D, setUse3D] = useState(false)
 
   // Registration modal state (for name input on game page)
   const [showRegModal, setShowRegModal] = useState(false)
@@ -343,7 +341,7 @@ export default function GamePage({ params }: { params: Params }) {
         {/* Board area */}
         <div className="flex flex-col flex-1 items-center px-2 py-1 sm:py-3 gap-1 sm:gap-2 overflow-auto">
           {/* Match header bar */}
-          <div className="w-full max-w-[720px] glass-panel rounded-xl px-3 py-2 flex items-center justify-between gap-2">
+          <div className="w-full max-w-[760px] glass-panel rounded-xl px-3 py-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <Icon name="trophy" size={14} className="text-[var(--c-accent)] shrink-0" />
               <div className="min-w-0">
@@ -370,13 +368,13 @@ export default function GamePage({ params }: { params: Params }) {
           </div>
 
           {/* Opponent panel (top) */}
-          <div className="w-full max-w-[720px]">
+          <div className="w-full max-w-[760px]">
             <PlayerPanel game={playingGame} color={topColor} position="top" isMyColor={false} />
           </div>
 
           {/* Turn indicator arrow */}
           {playingGame.status === 'playing' && (
-            <div className="w-full max-w-[720px] flex justify-center -my-1">
+            <div className="w-full max-w-[760px] flex justify-center -my-1">
               <div className={`px-3 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
                 playingGame.currentTurn === topColor
                   ? 'bg-[var(--c-accent)] text-[var(--c-accent-text)] animate-pulse'
@@ -388,51 +386,21 @@ export default function GamePage({ params }: { params: Params }) {
             </div>
           )}
 
-          {/* Board - bigger now (max-w-[720px] to fill more screen) */}
-          <div className="flex-shrink-0 w-full max-w-[720px] relative">
-            {use3D ? (
-              <Board3D
-                board={playingGame.boardState}
-                myColor={myColor}
-                currentTurn={playingGame.currentTurn}
-                lastMove={playingGame.moves[playingGame.moves.length - 1] ?? null}
-                isInCheck={boardInCheck}
-                disabled={!isPlayer || playingGame.currentTurn !== myColor || playingGame.status !== 'playing'}
-                onMove={handleMove}
-              />
-            ) : (
-              <Board
-                board={playingGame.boardState}
-                myColor={myColor}
-                currentTurn={playingGame.currentTurn}
-                lastMove={playingGame.moves[playingGame.moves.length - 1] ?? null}
-                isInCheck={boardInCheck}
-                disabled={!isPlayer || playingGame.currentTurn !== myColor || playingGame.status !== 'playing'}
-                onMove={handleMove}
-              />
-            )}
-            {/* Floating 2D/3D toggle */}
-            <button
-              onClick={() => setUse3D(!use3D)}
-              className="absolute top-2 right-2 z-10 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--c-surface)]/90 backdrop-blur border border-[var(--c-border)] text-[var(--c-muted)] hover:text-[var(--c-accent)] hover:border-[var(--c-accent)] transition-all flex items-center gap-1.5 shadow-lg cursor-pointer"
-              aria-label={`Switch to ${use3D ? '2D' : '3D'} board`}
-            >
-              {use3D ? (
-                <>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-                  2D
-                </>
-              ) : (
-                <>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
-                  3D
-                </>
-              )}
-            </button>
+          {/* Board - bigger now (max-w-[760px] to fill more screen) */}
+          <div className="flex-shrink-0 w-full max-w-[760px] relative">
+            <Board
+              board={playingGame.boardState}
+              myColor={myColor}
+              currentTurn={playingGame.currentTurn}
+              lastMove={playingGame.moves[playingGame.moves.length - 1] ?? null}
+              isInCheck={boardInCheck}
+              disabled={!isPlayer || playingGame.currentTurn !== myColor || playingGame.status !== 'playing'}
+              onMove={handleMove}
+            />
           </div>
 
           {/* My panel (bottom) */}
-          <div className="w-full max-w-[720px]">
+          <div className="w-full max-w-[760px]">
             <PlayerPanel game={playingGame} color={bottomColor} position="bottom" isMyColor={!!myColor} />
           </div>
 
