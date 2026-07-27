@@ -92,39 +92,31 @@ Fix 7 production bugs in the game screen, replay page, and game logic. Deploy vi
    - Apply `filter="url(#piece-shadow)"` to all pieces uniformly
    - Remove inline `drop-shadow` from individual pieces
 
-**Implementation note for Bug 4**: The current code uses `code` as key. The fix needs to track pieces by their identity (which specific pawn moved), not just by their type. Suggested approach:
+**Implementation for Bug 4**: The current code uses `code` as key. We need to track pieces by their identity (which specific pawn moved), not just by their type. **Approach**: Use a `useRef` Map keyed by initial position to assign each piece a stable unique ID:
 
 ```typescript
-// Build a stable mapping: code -> unique instance id
-const pieceInstanceMap = new Map<string, string>()
-const seenCodes = new Set<string>()
-// ...
-if (code && !seenCodes.has(code + '@' + r + ',' + c)) {
-  // First time seeing this piece code at this position - assign ID
-  pieceInstanceMap.set(code + '@' + r + ',' + c, `${code}-${r}-${c}`)
-  seenCodes.add(code + '@' + r + ',' + c)
-}
-```
+const pieceIdMapRef = useRef<Map<string, string>>(new Map())
 
-Better: post-process the piece list to assign unique IDs based on count:
-
-```typescript
-const pieceCounts: Record<string, number> = {}
-const pieceList = []
-for (let r = 0; r < 10; r++) {
-  for (let c = 0; c < 9; c++) {
-    const code = board[r]?.[c]
-    if (code) {
-      pieceCounts[code] = (pieceCounts[code] ?? 0) + 1
-      pieceList.push({ code, row: r, col: c, key: `${code}-${pieceCounts[code]}` })
-    }
+function getPieceId(code: string, row: number, col: number): string {
+  const posKey = `${row},${col}`
+  // Look up existing ID by position (maintains ID across moves because pawn at (3,0) initial is still the same pawn when it moves to (4,0))
+  const existing = pieceIdMapRef.current.entries()
+  for (const [id, key] of Array.from(existing)) {
+    if (key === posKey && id.startsWith(code)) return id
   }
+  // Otherwise assign a new unique ID
+  let counter = 1
+  let newId = `${code}-${counter}`
+  while (pieceIdMapRef.current.has(newId)) {
+    counter++
+    newId = `${code}-${counter}`
+  }
+  pieceIdMapRef.current.set(newId, posKey)
+  return newId
 }
 ```
 
-This gives each piece a unique key (e.g., `r-zu-1`, `r-zu-2`, ...) but the key is re-evaluated each render, so FLIP animation breaks. To preserve FLIP, we need a stable mapping.
-
-**Recommended approach**: Use a `useRef` Map that tracks each piece's unique ID across renders. On first render, assign IDs based on position. On subsequent renders, look up by position-with-code match.
+Then in piece list: `key: getPieceId(code, r, c)`. This gives each piece a stable unique ID across renders, preserving FLIP animation while preventing React from merging same-code pieces.
 
 **Acceptance**:
 - [ ] No more duplicate pieces after 3-4 moves
