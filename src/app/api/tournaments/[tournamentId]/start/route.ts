@@ -60,34 +60,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tou
       })
 
       await TournamentMatch.insertMany(matches)
-
-      // Auto-complete BYE matches
-      const byeMatches = matches.filter(m => m.status === 'BYE')
-      for (const bye of byeMatches) {
-        await TournamentMatch.updateOne(
-          { matchId: bye.matchId },
-          {
-            $set: {
-              status: 'COMPLETED',
-              completedAt: new Date(),
-              result: {
-                winner: 'PLAYER1',
-                score1: 3,
-                score2: 0,
-                resultType: 'BYE',
-                endReason: 'BYE',
-                submittedAt: new Date(),
-                version: 1,
-              },
-            },
-          }
-        )
-        const pts = tournament.settings.winPoints
-        await TournamentParticipant.updateOne(
-          { tournamentId, deviceId: bye.player1!.deviceId },
-          { $inc: { 'stats.played': 1, 'stats.wins': 1, 'stats.points': pts, 'stats.byes': 1 } }
-        )
-      }
     } else if (tournament.format === 'GROUP_KNOCKOUT') {
       const groups = splitIntoGroups(seeds, tournament.settings.groupCount)
       const matches: Array<{ matchId: string; tournamentId: string; phase: 'GROUP_STAGE'; roundNumber: number; roundLabel: string; groupId: string; player1: { deviceId: string; nameSnapshot: string; seed: number; color: 'RED' | 'BLACK' }; player2: { deviceId: string; nameSnapshot: string; seed: number; color: 'RED' | 'BLACK' } | null; status: 'SCHEDULED' | 'BYE' }> = []
@@ -120,41 +92,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tou
               player2: pairing.player2
                 ? { deviceId: pairing.player2.deviceId, nameSnapshot: pairing.player2.nameSnapshot, seed: pairing.player2.seed, color: 'BLACK' }
                 : null,
-              status: pairing.isBye ? 'BYE' : 'SCHEDULED',
+              status: 'SCHEDULED',
             })
           })
         })
       }
 
       await TournamentMatch.insertMany(matches)
-
-      // Auto-complete BYE matches
-      const byeMatches = matches.filter(m => m.status === 'BYE')
-      for (const bye of byeMatches) {
-        await TournamentMatch.updateOne(
-          { matchId: bye.matchId },
-          {
-            $set: {
-              status: 'COMPLETED',
-              completedAt: new Date(),
-              result: {
-                winner: 'PLAYER1',
-                score1: 3,
-                score2: 0,
-                resultType: 'BYE',
-                endReason: 'BYE',
-                submittedAt: new Date(),
-                version: 1,
-              },
-            },
-          }
-        )
-        const pts = tournament.settings.winPoints
-        await TournamentParticipant.updateOne(
-          { tournamentId, deviceId: bye.player1!.deviceId },
-          { $inc: { 'stats.played': 1, 'stats.wins': 1, 'stats.points': pts, 'stats.byes': 1 } }
-        )
-      }
     }
 
     tournament.status = 'STARTED'

@@ -1,12 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Badge from '@/components/ui/Badge'
 import Icon from '@/components/ui/Icon'
+import CopyButton from '@/components/ui/CopyButton'
 import { usePlayer } from '@/hooks/usePlayer'
+import { useI18n } from '@/hooks/useI18n'
+import type { Language } from '@/types'
 
 interface Tournament {
   tournamentId: string
@@ -92,7 +95,8 @@ interface Standing {
 
 export default function TournamentPage({ params }: { params: Promise<{ tournamentId: string }> }) {
   const router = useRouter()
-  const { deviceId, player, loading: playerLoading } = usePlayer()
+  const { deviceId, player, loading: playerLoading, needsName, register } = usePlayer()
+  const { language, setLanguage, t } = useI18n()
   const [tournamentId, setTournamentId] = useState<string>('')
   const [tournament, setTournament] = useState<Tournament | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
@@ -107,6 +111,47 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
   const [joinError, setJoinError] = useState('')
   const [starting, setStarting] = useState(false)
   const [tab, setTab] = useState<'overview' | 'schedule' | 'standings' | 'bracket' | 'rules'>('overview')
+
+  // Registration modal state (for users without a name)
+  const [regName, setRegName] = useState('')
+  const [regLang, setRegLang] = useState<Language>('vi')
+  const [regError, setRegError] = useState('')
+  const [regLoading, setRegLoading] = useState(false)
+  const [showRegModal, setShowRegModal] = useState(false)
+
+  // Host edit result modal
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null)
+  const [editWinner, setEditWinner] = useState<'PLAYER1' | 'PLAYER2' | 'DRAW'>('PLAYER1')
+  const [editNotes, setEditNotes] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
+
+  useEffect(() => {
+    if (!showRegModal) return
+    setRegLang(language)
+  }, [showRegModal, language])
+
+  useEffect(() => {
+    if (needsName) setShowRegModal(true)
+  }, [needsName])
+
+  async function handleRegister() {
+    const name = regName.trim()
+    if (name.length < 2 || name.length > 16) {
+      setRegError(t('nameError') || 'Tên phải từ 2-16 ký tự')
+      return
+    }
+    setRegLoading(true)
+    setRegError('')
+    try {
+      await register(name, regLang)
+      setLanguage(regLang)
+      setShowRegModal(false)
+    } catch (e: unknown) {
+      setRegError(e instanceof Error ? e.message : (t('genericError') || 'Có lỗi xảy ra'))
+    } finally {
+      setRegLoading(false)
+    }
+  }
 
   useEffect(() => {
     params.then(p => setTournamentId(p.tournamentId))
@@ -406,8 +451,18 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
                     </h2>
                   </div>
                   <div className="space-y-2">
-                    {matches.filter(m => m.status === 'COMPLETED' || m.status === 'STARTED').slice(0, 5).map(match => (
-                      <MatchCard key={match.matchId} match={match} tournamentId={tournamentId} deviceId={deviceId} isHost={isHost} isParticipant={isParticipant} onStartMatch={handleStartMatch} />
+                    {matches.filter(m => m.status === 'COMPLETED' || m.status === 'STARTED' || m.status === 'READY').slice(0, 5).map(match => (
+                      <MatchCard
+                        key={match.matchId}
+                        match={match}
+                        tournamentId={tournamentId}
+                        deviceId={deviceId}
+                        isHost={isHost}
+                        isParticipant={isParticipant}
+                        isSpectatorAllowed={tournament.settings.allowSpectators}
+                        onStartMatch={handleStartMatch}
+                        onEditResult={(m) => { setEditingMatch(m); setEditWinner(m.result.winner === 'DRAW' ? 'DRAW' : (m.result.winner as 'PLAYER1' | 'PLAYER2')); setEditNotes('') }}
+                      />
                     ))}
                   </div>
                 </section>
@@ -470,21 +525,19 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
               </div>
             ) : (
               <div className="space-y-2 stagger">
-                {matches.filter(m => m.status !== 'BYE' && m.result.resultType !== 'BYE' && m.player2 !== null).map(match => (
-                  <MatchCard key={match.matchId} match={match} tournamentId={tournamentId} deviceId={deviceId} isHost={isHost} isParticipant={isParticipant} onStartMatch={handleStartMatch} />
+                {matches.filter(m => m.player1 && m.player2).map(match => (
+                  <MatchCard
+                    key={match.matchId}
+                    match={match}
+                    tournamentId={tournamentId}
+                    deviceId={deviceId}
+                    isHost={isHost}
+                    isParticipant={isParticipant}
+                    isSpectatorAllowed={tournament.settings.allowSpectators}
+                    onStartMatch={handleStartMatch}
+                    onEditResult={(m) => { setEditingMatch(m); setEditWinner(m.result.winner === 'DRAW' ? 'DRAW' : (m.result.winner as 'PLAYER1' | 'PLAYER2')); setEditNotes('') }}
+                  />
                 ))}
-                {matches.filter(m => m.status === 'BYE' || m.result.resultType === 'BYE' || m.player2 === null).length > 0 && (
-                  <details className="text-xs text-[var(--c-muted)] mt-4">
-                    <summary className="cursor-pointer hover:text-[var(--c-text)] py-2 px-3 rounded-lg hover:bg-[var(--c-elevated)]/30">
-                      {matches.filter(m => m.status === 'BYE' || m.result.resultType === 'BYE' || m.player2 === null).length} trận BYE (bỏ qua do lẻ người)
-                    </summary>
-                    <div className="space-y-1 mt-2 pl-3 border-l-2 border-[var(--c-border)]">
-                      {matches.filter(m => m.status === 'BYE' || m.result.resultType === 'BYE' || m.player2 === null).map(match => (
-                        <MatchCard key={match.matchId} match={match} tournamentId={tournamentId} deviceId={deviceId} isHost={isHost} isParticipant={isParticipant} onStartMatch={handleStartMatch} />
-                      ))}
-                    </div>
-                  </details>
-                )}
               </div>
             )}
           </section>
@@ -628,6 +681,93 @@ export default function TournamentPage({ params }: { params: Promise<{ tournamen
           </div>
         </div>
       </Modal>
+
+      {/* Registration modal — shown when user has no name (from any direct deep link) */}
+      {showRegModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-[var(--c-surface)] border border-[var(--c-border)] rounded-2xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-[var(--c-text)] mb-1">{t('welcome') || 'Chào mừng!'}</h2>
+            <p className="text-[var(--c-muted)] text-sm mb-4">Nhập tên để bắt đầu chơi cờ tướng online</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-[var(--c-muted)] mb-1">Tên hiển thị</label>
+                <input
+                  value={regName}
+                  onChange={e => { setRegName(e.target.value); setRegError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handleRegister()}
+                  placeholder="Tên của bạn (2-16 ký tự)"
+                  maxLength={16}
+                  autoFocus
+                  className="w-full bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] placeholder-[var(--c-dim)] focus:outline-none focus:border-[var(--c-accent)] text-sm"
+                />
+                {regError && <p className="text-[var(--c-danger)] text-xs mt-1">{regError}</p>}
+              </div>
+              <Button variant="primary" className="w-full" loading={regLoading} disabled={regName.trim().length < 2} onClick={handleRegister}>
+                Bắt đầu
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Host edit result modal */}
+      {editingMatch && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[var(--c-surface)] border border-[var(--c-border)] rounded-2xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-[var(--c-text)] mb-1">Sửa kết quả trận đấu</h2>
+            <p className="text-[var(--c-muted)] text-sm mb-4">{editingMatch.roundLabel} · {editingMatch.player1?.nameSnapshot} vs {editingMatch.player2?.nameSnapshot}</p>
+            <div className="space-y-3">
+              <label className="block">
+                <input type="radio" name="winner" className="mr-2" checked={editWinner === 'PLAYER1'} onChange={() => setEditWinner('PLAYER1')} />
+                <span className="text-[var(--c-text)] text-sm">{editingMatch.player1?.nameSnapshot} thắng</span>
+              </label>
+              <label className="block">
+                <input type="radio" name="winner" className="mr-2" checked={editWinner === 'PLAYER2'} onChange={() => setEditWinner('PLAYER2')} />
+                <span className="text-[var(--c-text)] text-sm">{editingMatch.player2?.nameSnapshot} thắng</span>
+              </label>
+              <label className="block">
+                <input type="radio" name="winner" className="mr-2" checked={editWinner === 'DRAW'} onChange={() => setEditWinner('DRAW')} />
+                <span className="text-[var(--c-text)] text-sm">Hòa</span>
+              </label>
+              <div>
+                <label className="block text-xs text-[var(--c-muted)] mb-1">Ghi chú (tùy chọn)</label>
+                <input
+                  value={editNotes}
+                  onChange={e => setEditNotes(e.target.value)}
+                  placeholder="Lý do sửa..."
+                  className="w-full bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] placeholder-[var(--c-dim)] focus:outline-none focus:border-[var(--c-accent)] text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <Button variant="secondary" fullWidth onClick={() => setEditingMatch(null)}>Hủy</Button>
+              <Button variant="primary" fullWidth loading={editLoading} onClick={async () => {
+                if (!editingMatch) return
+                setEditLoading(true)
+                try {
+                  const res = await fetch(`/api/tournaments/${tournamentId}/match/${editingMatch.matchId}/result`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceId, winner: editWinner, notes: editNotes || undefined }),
+                  })
+                  if (res.ok) {
+                    setEditingMatch(null)
+                    setEditNotes('')
+                    fetchAll()
+                  } else {
+                    const data = await res.json()
+                    alert(data.error ?? 'Có lỗi xảy ra')
+                  }
+                } catch {
+                  alert('Có lỗi xảy ra')
+                } finally {
+                  setEditLoading(false)
+                }
+              }} icon={<Icon name="check" size={14} />}>Lưu</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -663,21 +803,22 @@ function MatchCard({
   deviceId,
   isHost,
   isParticipant,
+  isSpectatorAllowed,
   onStartMatch,
+  onEditResult,
 }: {
   match: Match
   tournamentId: string
   deviceId: string | null
   isHost: boolean
   isParticipant: boolean
+  isSpectatorAllowed: boolean
   onStartMatch: (matchId: string) => void
+  onEditResult: (match: Match) => void
 }) {
   const isMine = isParticipant && (match.player1?.deviceId === deviceId || match.player2?.deviceId === deviceId)
-  const iStarted = isMine && match.startClaimedBy === deviceId
-  const opponentStarted = isMine && match.startClaimedBy && match.startClaimedBy !== deviceId
-  const canStart = isMine && (match.status === 'SCHEDULED' || match.status === 'READY')
-  const waitingForOpponent = isMine && match.status === 'READY' && iStarted
-  const canJoin = isMine && match.status === 'READY' && opponentStarted && !iStarted
+  const isPlayer = match.player1?.deviceId === deviceId || match.player2?.deviceId === deviceId
+  const gameUrl = match.gameId ? (typeof window !== 'undefined' ? `${window.location.origin}/game/${match.gameId}` : `/game/${match.gameId}`) : null
 
   const statusColors: Record<string, { bg: string; text: string; label: string }> = {
     SCHEDULED: { bg: 'var(--c-elevated)', text: 'var(--c-muted)', label: 'Chờ' },
@@ -716,7 +857,7 @@ function MatchCard({
         </div>
         <Player name={match.player2?.nameSnapshot ?? 'BYE'} winner={match.result.winner === 'PLAYER2'} align="right" />
       </div>
-      {match.result.resultType === 'COMPLETED' && match.result.winner !== 'NONE' && (
+      {match.status === 'COMPLETED' && match.result.winner !== 'NONE' && match.result.winner !== undefined && (
         <div className="px-3 sm:px-4 py-2.5 border-t border-[var(--c-border)] bg-gradient-to-r from-[var(--c-accent-bg)] to-transparent text-center">
           {match.result.winner === 'DRAW' ? (
             <span className="text-xs font-semibold text-[var(--c-muted)] uppercase tracking-wider">Hòa</span>
@@ -728,31 +869,67 @@ function MatchCard({
           )}
         </div>
       )}
-      <div className="px-3 sm:px-4 py-3 border-t border-[var(--c-border)] flex gap-2 justify-end bg-[var(--c-elevated)]/20">
-        {match.status === 'SCHEDULED' && isMine && (
+
+      {/* Shareable link section when match has a gameId */}
+      {gameUrl && (match.status === 'READY' || match.status === 'STARTED') && (
+        <div className="px-3 sm:px-4 py-2.5 border-t border-[var(--c-border)] bg-[var(--c-elevated)]/30">
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-[10px] sm:text-xs text-[var(--c-accent)] font-mono truncate bg-[var(--c-surface)] px-2 py-1.5 rounded border border-[var(--c-border)]">
+              {gameUrl}
+            </code>
+            <CopyButton text={gameUrl} label="Sao chép link" />
+          </div>
+        </div>
+      )}
+
+      <div className="px-3 sm:px-4 py-3 border-t border-[var(--c-border)] flex flex-wrap gap-2 justify-end bg-[var(--c-elevated)]/20">
+        {/* SCHEDULED + isPlayer: start match (creates game, link is shareable) */}
+        {match.status === 'SCHEDULED' && isPlayer && (
           <Button variant="primary" size="sm" onClick={() => onStartMatch(match.matchId)} icon={<Icon name="play" size={12} />}>
             Bắt đầu trận
           </Button>
         )}
-        {waitingForOpponent && (
-          <span className="text-xs text-[var(--c-info)] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--c-info-bg)] font-medium">
-            <Icon name="info" size={12} />
-            Chờ {match.player1?.deviceId === deviceId ? match.player2?.nameSnapshot : match.player1?.nameSnapshot} vào
-          </span>
-        )}
-        {canJoin && (
-          <Button variant="primary" size="sm" onClick={() => onStartMatch(match.matchId)} icon={<Icon name="play" size={12} />}>
-            Vào trận
-          </Button>
-        )}
-        {match.status === 'STARTED' && match.gameId && isMine && (
+
+        {/* READY + isPlayer: link is ready, both can click to enter */}
+        {match.status === 'READY' && isPlayer && gameUrl && (
           <Button variant="primary" size="sm" onClick={() => window.location.href = `/game/${match.gameId}`} icon={<Icon name="play" size={12} />}>
             Vào trận
           </Button>
         )}
-        {match.status === 'STARTED' && match.gameId && !isMine && (
+
+        {/* READY + spectator (not isPlayer): can watch if allowed */}
+        {match.status === 'READY' && !isPlayer && (
+          <span className="text-xs text-[var(--c-info)] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--c-info-bg)] font-medium">
+            <Icon name="info" size={12} />
+            Chờ 2 người chơi vào
+          </span>
+        )}
+
+        {/* STARTED + isPlayer: enter game */}
+        {match.status === 'STARTED' && isPlayer && gameUrl && (
+          <Button variant="primary" size="sm" onClick={() => window.location.href = `/game/${match.gameId}`} icon={<Icon name="play" size={12} />}>
+            Vào trận
+          </Button>
+        )}
+
+        {/* STARTED + spectator (not isPlayer): watch if allowed */}
+        {match.status === 'STARTED' && !isPlayer && gameUrl && isSpectatorAllowed && (
           <Button variant="secondary" size="sm" onClick={() => window.location.href = `/game/${match.gameId}`} icon={<Icon name="eye" size={12} />}>
             Theo dõi
+          </Button>
+        )}
+
+        {/* COMPLETED + host: edit result */}
+        {match.status === 'COMPLETED' && isHost && (
+          <Button variant="ghost" size="sm" onClick={() => onEditResult(match)} icon={<Icon name="cog" size={12} />}>
+            Sửa kết quả
+          </Button>
+        )}
+
+        {/* COMPLETED + spectator: replay */}
+        {match.status === 'COMPLETED' && gameUrl && (
+          <Button variant="ghost" size="sm" onClick={() => window.location.href = `/game/${match.gameId}/replay`} icon={<Icon name="history" size={12} />}>
+            Xem lại
           </Button>
         )}
       </div>
