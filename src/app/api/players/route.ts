@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/mongodb'
-import { Player } from '@/models/Player'
+import { Player, generateRecoveryCode } from '@/models/Player'
 import { getTier } from '@/lib/elo'
 
 export async function POST(req: NextRequest) {
@@ -19,7 +19,16 @@ export async function POST(req: NextRequest) {
         deviceId: existing.deviceId,
         name: existing.name,
         ranking: existing.ranking,
+        recoveryCode: existing.recoveryCode,
       })
+    }
+
+    // Generate unique recovery code
+    let recoveryCode = generateRecoveryCode()
+    let attempts = 0
+    while (await Player.findOne({ recoveryCode }) && attempts < 5) {
+      recoveryCode = generateRecoveryCode()
+      attempts++
     }
 
     const player = await Player.create({
@@ -27,12 +36,14 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       preferences: { language },
       ranking: { elo: 1500, tier: getTier(1500), peakElo: 1500 },
+      recoveryCode,
     })
 
     return NextResponse.json({
       deviceId: player.deviceId,
       name: player.name,
       ranking: player.ranking,
+      recoveryCode: player.recoveryCode,
     }, { status: 201 })
   } catch (err) {
     console.error('POST /api/players error:', err)

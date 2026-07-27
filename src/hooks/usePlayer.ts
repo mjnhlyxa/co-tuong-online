@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getOrCreateDeviceId, isFirstVisit, savePlayerName, detectLanguage, getSavedLanguage, saveLanguage } from '@/lib/player'
 import type { PlayerProfile, Language } from '@/types'
 
@@ -70,5 +70,36 @@ export function usePlayer() {
     return data
   }
 
-  return { deviceId, player, loading, needsName, register, updateName }
+  const recover = useCallback(async (code: string) => {
+    if (!deviceId) throw new Error('No device id')
+    const res = await fetch('/api/players/recover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, deviceId }),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'Recovery failed')
+    }
+    const data = await res.json()
+    setPlayer(data)
+    setNeedsName(false)
+    return data
+  }, [deviceId])
+
+  const regenerateCode = useCallback(async () => {
+    if (!deviceId) throw new Error('No device id')
+    const res = await fetch('/api/players/recover', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId }),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'Regenerate failed')
+    }
+    return (await res.json()).recoveryCode as string
+  }, [deviceId])
+
+  return { deviceId, player, loading, needsName, register, updateName, recover, regenerateCode }
 }

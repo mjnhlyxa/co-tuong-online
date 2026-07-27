@@ -51,6 +51,10 @@ export default function LobbyPage() {
   const [regLang, setRegLang] = useState<Language>(language as Language)
   const [regError, setRegError] = useState('')
   const [regLoading, setRegLoading] = useState(false)
+  const [showRecover, setShowRecover] = useState(false)
+  const [recoverCode, setRecoverCode] = useState('')
+  const [recoverError, setRecoverError] = useState('')
+  const [recoverLoading, setRecoverLoading] = useState(false)
 
   const [showCreate, setShowCreate] = useState(false)
   const [roomType, setRoomType] = useState<'public' | 'private'>('public')
@@ -135,12 +139,44 @@ export default function LobbyPage() {
     setRegLoading(true)
     setRegError('')
     try {
-      await register(name, regLang)
+      const reg = await register(name, regLang)
       setLanguage(regLang)
+      // Show recovery code in toast (only first time)
+      if (reg?.recoveryCode) {
+        const { toast } = await import('@/components/ui/Toast')
+        toast(`Mã khôi phục của bạn: ${reg.recoveryCode} - Lưu lại để dùng khi đổi thiết bị!`, 'success')
+      }
     } catch (e: unknown) {
       setRegError(e instanceof Error ? e.message : t('genericError'))
     } finally {
       setRegLoading(false)
+    }
+  }
+
+  async function handleRecover() {
+    setRecoverLoading(true)
+    setRecoverError('')
+    try {
+      const res = await fetch('/api/players/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: recoverCode, deviceId }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        if (data.error === 'CODE_NOT_FOUND') throw new Error('Mã khôi phục không đúng')
+        if (data.error === 'DEVICE_TAKEN') throw new Error('Thiết bị này đã liên kết với tài khoản khác')
+        throw new Error(data.error || 'Khôi phục thất bại')
+      }
+      const result = await res.json()
+      setShowRecover(false)
+      setRecoverCode('')
+      // Reload to pick up new player
+      window.location.reload()
+    } catch (e: unknown) {
+      setRecoverError(e instanceof Error ? e.message : 'Mã không hợp lệ')
+    } finally {
+      setRecoverLoading(false)
     }
   }
 
@@ -573,7 +609,7 @@ export default function LobbyPage() {
       </footer>
 
       {/* Registration modal */}
-      <Modal open={needsName} title={t('welcome')} description={t('registerHint')} closeOnBackdrop={false} hideClose size="md">
+      <Modal open={needsName && !showRecover} title={t('welcome')} description={t('registerHint')} closeOnBackdrop={false} hideClose size="md">
         <div className="space-y-5">
           <div>
             <label className="block text-xs font-semibold text-[var(--c-text)] mb-2 uppercase tracking-wider">{t('displayName')}</label>
@@ -598,6 +634,42 @@ export default function LobbyPage() {
           <Button variant="primary" fullWidth size="lg" loading={regLoading} disabled={regName.trim().length < 2} onClick={handleRegister}>
             {t('startPlaying')}
           </Button>
+          <div className="text-center pt-2 border-t border-[var(--c-border)]">
+            <button
+              onClick={() => setShowRecover(true)}
+              className="text-xs text-[var(--c-muted)] hover:text-[var(--c-accent)] transition-colors"
+            >
+              Đã có tài khoản? <span className="font-semibold underline">Khôi phục bằng mã</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Recover modal */}
+      <Modal open={showRecover} onClose={() => setShowRecover(false)} title="Khôi phục tài khoản" description="Nhập mã khôi phục 12 ký tự" size="sm">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-[var(--c-text)] mb-2 uppercase tracking-wider">Mã khôi phục</label>
+            <input
+              value={recoverCode}
+              onChange={e => { setRecoverCode(e.target.value); setRecoverError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleRecover()}
+              placeholder="K7H2-N8P3-9M4Q"
+              autoFocus
+              maxLength={16}
+              className="w-full bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-xl px-4 py-3 text-[var(--c-text)] placeholder-[var(--c-dim)] focus:outline-none focus:border-[var(--c-accent)] text-center text-base font-mono tracking-wider uppercase"
+            />
+            {recoverError && <p className="text-[var(--c-danger)] text-xs mt-2">{recoverError}</p>}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" fullWidth onClick={() => setShowRecover(false)}>Hủy</Button>
+            <Button variant="primary" fullWidth loading={recoverLoading} disabled={recoverCode.length < 10} onClick={handleRecover}>
+              Khôi phục
+            </Button>
+          </div>
+          <p className="text-xs text-[var(--c-muted)] text-center">
+            Mã này được cấp khi bạn đăng ký. Nếu đã mất, hãy tạo tài khoản mới.
+          </p>
         </div>
       </Modal>
 

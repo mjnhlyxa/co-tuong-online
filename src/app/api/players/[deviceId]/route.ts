@@ -24,6 +24,7 @@ export async function GET(
       stats: player.stats,
       ranking: player.ranking,
       preferences: player.preferences,
+      recoveryCode: player.recoveryCode,
     })
   } catch (err) {
     console.error('GET /api/players/[deviceId] error:', err)

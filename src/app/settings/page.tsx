@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSettings } from '@/hooks/useSettings'
+import { usePlayer } from '@/hooks/usePlayer'
 import Button from '@/components/ui/Button'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import { LANGUAGES } from '@/components/ui/LanguageSelector'
@@ -19,6 +21,16 @@ export default function SettingsPage() {
   const router = useRouter()
   const { settings, update, reset } = useSettings()
   const { setLanguage, t } = useI18n()
+  const { deviceId, regenerateCode } = usePlayer()
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!deviceId) return
+    fetch(`/api/players/${deviceId}`)
+      .then(r => r.json())
+      .then(d => { if (d?.recoveryCode) setRecoveryCode(d.recoveryCode) })
+      .catch(() => {})
+  }, [deviceId])
 
   return (
     <div className="min-h-screen pb-16">
@@ -141,6 +153,46 @@ export default function SettingsPage() {
 
         {/* Account Section */}
         <Section icon="user" title="Tài khoản">
+          {recoveryCode && (
+            <Row
+              label="Mã khôi phục tài khoản"
+              desc="Dùng mã này để khôi phục tài khoản khi đổi thiết bị hoặc xóa browser"
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                <code className="text-sm font-mono font-bold text-[var(--c-accent)] bg-[var(--c-elevated)] px-3 py-1.5 rounded-lg select-all">
+                  {recoveryCode}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(recoveryCode)
+                    const { toast } = await import('@/components/ui/Toast')
+                    toast('Đã sao chép mã khôi phục!', 'success')
+                  }}
+                >
+                  Sao chép
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const newCode = await regenerateCode()
+                      setRecoveryCode(newCode)
+                      const { toast } = await import('@/components/ui/Toast')
+                      toast(`Mã mới: ${newCode}`, 'success')
+                    } catch {
+                      const { toast } = await import('@/components/ui/Toast')
+                      toast('Không thể tạo mã mới', 'error')
+                    }
+                  }}
+                >
+                  Tạo mã mới
+                </Button>
+              </div>
+            </Row>
+          )}
           <Row label="Đặt lại về mặc định" desc="Khôi phục tất cả cài đặt">
             <Button variant="secondary" size="sm" onClick={reset}>
               Đặt lại
