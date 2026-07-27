@@ -11,12 +11,12 @@ import { PIECE_CHARS } from '@/lib/xiangqi/notation'
 interface PlayerStats {
   deviceId: string
   name: string
-  elo: number
-  tier: string
+  exists?: boolean
+  ranking: { elo: number; tier: string; peakElo: number }
   stats: { wins: number; losses: number; draws: number; totalGames: number; abandonedWins: number; abandonedLosses: number }
   preferences: { language: string }
-  lastSeenAt: string
-  createdAt: string
+  lastSeenAt?: string
+  createdAt?: string
 }
 
 interface GameHistoryItem {
@@ -113,7 +113,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<{ device
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <Avatar
               name={player.name}
-              color={player.elo >= 1900 ? 'gold' : player.elo >= 1600 ? 'red' : 'auto'}
+              color={player.ranking.elo >= 1900 ? 'gold' : player.ranking.elo >= 1600 ? 'red' : 'auto'}
               size="xl"
               ring={false}
             />
@@ -122,14 +122,16 @@ export default function PlayerProfilePage({ params }: { params: Promise<{ device
                 {player.name}
               </h2>
               <div className="flex items-center justify-center sm:justify-start gap-3 mt-2">
-                <Badge tier={player.tier as 'bronze'|'silver'|'gold'|'platinum'|'diamond'} elo={player.elo} />
-                <span className="text-2xl font-black text-[var(--c-accent)] tabular-nums">{player.elo}</span>
+                <Badge tier={player.ranking.tier as 'bronze'|'silver'|'gold'|'platinum'|'diamond'} elo={player.ranking.elo} />
+                <span className="text-2xl font-black text-[var(--c-accent)] tabular-nums">{player.ranking.elo}</span>
                 <span className="text-xs text-[var(--c-muted)] uppercase tracking-wider">ELO</span>
               </div>
-              <div className="text-xs text-[var(--c-muted)] mt-2">
-                Tham gia: {new Date(player.createdAt).toLocaleDateString('vi-VN')} ·
-                Hoạt động: {new Date(player.lastSeenAt).toLocaleDateString('vi-VN')}
-              </div>
+              {player.createdAt && player.lastSeenAt && (
+                <div className="text-xs text-[var(--c-muted)] mt-2">
+                  Tham gia: {new Date(player.createdAt).toLocaleDateString('vi-VN')} ·
+                  Hoạt động: {new Date(player.lastSeenAt).toLocaleDateString('vi-VN')}
+                </div>
+              )}
             </div>
           </div>
         </section>
