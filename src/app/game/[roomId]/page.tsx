@@ -19,6 +19,7 @@ import { useGameSWR } from '@/hooks/useGameSWR'
 import { usePlayer } from '@/hooks/usePlayer'
 import { useI18n } from '@/hooks/useI18n'
 import { isInCheck } from '@/lib/xiangqi/rules'
+import { initSound, playMove, playCapture, playCheck, playWin, playLose, playDraw } from '@/lib/sound'
 import type { Color, Language } from '@/types'
 
 type Params = Promise<{ roomId: string }>
@@ -111,8 +112,16 @@ export default function GamePage({ params }: { params: Params }) {
   useEffect(() => {
     if (game?.status === 'finished') {
       setTimeout(() => setShowResult(true), 800)
+      // Play win/lose/draw SFX
+      if (game?.winner === 'draw') playDraw()
+      else if (game?.winner === game?.myColor) playWin()
+      else playLose()
     }
   }, [game?.status])
+
+  // SFX: play sounds on move / capture / check (initialized later when boardInCheck is available)
+  const prevMovesRef = useRef<number>(0)
+  const prevInCheckRef = useRef<boolean>(false)
 
   useEffect(() => {
     const currentStatus = game?.takebackRequest?.status ?? null
@@ -293,6 +302,23 @@ export default function GamePage({ params }: { params: Params }) {
 
   const boardInCheck = isInCheck(playingGame.boardState, playingGame.currentTurn)
 
+  // SFX: play sounds on move / capture / check
+  useEffect(() => {
+    initSound()
+    if (!game) return
+    if (game.status !== 'playing') return
+    const currentMoveCount = game.moves?.length ?? 0
+    if (currentMoveCount > prevMovesRef.current) {
+      const lastMove = game.moves?.[currentMoveCount - 1]
+      if (lastMove?.captured) playCapture()
+      else playMove()
+    }
+    prevMovesRef.current = currentMoveCount
+
+    if (boardInCheck && !prevInCheckRef.current) playCheck()
+    prevInCheckRef.current = boardInCheck
+  }, [game?.moves?.length, boardInCheck, game?.status])
+
   const takebacksUsedByMe = myColor ? playingGame.takebacksUsed[myColor] : 0
   const canTakeback = isPlayer &&
     playingGame.currentTurn !== myColor &&
@@ -310,6 +336,18 @@ export default function GamePage({ params }: { params: Params }) {
     if (!resignConfirm) { setResignConfirm(true); return }
     try { await resign() } catch {}
     setResignConfirm(false)
+  }
+
+  async function handleDraw(action: 'offer' | 'accept' | 'reject') {
+    try {
+      await fetch(`/api/games/${roomId}/draw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, action }),
+      })
+      // Reload game to see updated state
+      window.location.reload()
+    } catch {}
   }
 
   const shareUrl = typeof window !== 'undefined'
@@ -333,6 +371,14 @@ export default function GamePage({ params }: { params: Params }) {
           <CopyButton text={shareUrl} label={t('shareLink').replace('🔗 ', '')} />
           <ThemePicker />
           <LanguageSelector value={language} onChange={setLanguage} compact />
+          <a href="/settings" className="text-[var(--c-muted)] hover:text-[var(--c-accent)] transition-colors p-1" title="Cài đặt">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m17.5-5.5l-4.24 4.24m-4.5 4.5l-4.24 4.24M5.5 5.5L1.26 1.26m21.48 21.48L18.5 18.5"/></svg>
+          </a>
+          {myColor && (
+            <a href={`/player/${myColor === 'red' ? playingGame.redPlayer?.deviceId : playingGame.blackPlayer?.deviceId}`} className="text-[var(--c-muted)] hover:text-[var(--c-accent)] transition-colors p-1" title="Hồ sơ">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </a>
+          )}
         </div>
       </header>
 
@@ -418,7 +464,21 @@ export default function GamePage({ params }: { params: Params }) {
                   <Button variant="danger" size="sm" onClick={handleResign}>{t('confirmResign')}</Button>
                 </div>
               ) : (
-                <Button variant="ghost" size="sm" onClick={handleResign}>🏳 {t('resign')}</Button>
+                <>
+                  {playingGame.drawOffer && playingGame.drawOffer.status === 'pending' ? (
+                    playingGame.drawOffer.fromColor !== myColor ? (
+                      <>
+                        <Button variant="primary" size="sm" onClick={() => handleDraw('accept')}>🤝 Chấp nhận hòa</Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDraw('reject')}>Từ chối</Button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-[var(--c-muted)] italic">Đang chờ đối thủ chấp nhận hòa...</span>
+                    )
+                  ) : (
+                    <Button variant="ghost" size="sm" onClick={() => handleDraw('offer')}>🤝 Cầu hòa</Button>
+                  )}
+                  <Button variant="ghost" size="sm" onClick={handleResign}>🏳 {t('resign')}</Button>
+                </>
               )}
             </div>
           )}

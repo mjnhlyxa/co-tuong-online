@@ -22,8 +22,10 @@ export interface IGame extends Document {
   }>
   lastSeen: { red: Date; black: Date }
   timeControl: number | null
+  incrementMs: number
   timeRemaining: { red: number; black: number }
   lastMoveAt: Date | null
+  drawOffer: { fromColor: 'red' | 'black'; status: 'pending'; offeredAt: Date } | null
   allowSpectators: boolean
   allowTakeback: boolean
   spectators: Array<{ deviceId: string; name: string; joinedAt: Date }>
@@ -76,11 +78,18 @@ const GameSchema = new Schema<IGame>({
     black: { type: Date, default: Date.now },
   },
   timeControl: { type: Number, default: null },
+  incrementMs: { type: Number, default: 0 },
   timeRemaining: {
     red: { type: Number, default: 0 },
     black: { type: Number, default: 0 },
   },
   lastMoveAt: { type: Date, default: null },
+  drawOffer: {
+    fromColor: { type: String, enum: ['red', 'black'] },
+    status: { type: String, enum: ['pending'], default: 'pending' },
+    offeredAt: { type: Date, default: Date.now },
+    _id: false,
+  },
   allowSpectators: { type: Boolean, default: true },
   allowTakeback: { type: Boolean, default: true },
   spectators: [{

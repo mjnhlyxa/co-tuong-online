@@ -77,6 +77,12 @@ export async function POST(
       timeRemaining[myColor] = remaining
     }
 
+    // Apply time increment: add to OPPONENT's clock (since it's their turn after this move)
+    if (game.incrementMs && game.timeControl) {
+      const opponentColor: 'red' | 'black' = myColor === 'red' ? 'black' : 'red'
+      timeRemaining[opponentColor] = (timeRemaining[opponentColor] ?? 0) + game.incrementMs
+    }
+
     const newMoveNumber = game.currentMoveNumber + 1
     const newMove = {
       moveNumber: newMoveNumber,
