@@ -53,6 +53,24 @@ export async function GET(
     if (deviceId === game.redPlayer.deviceId) myColor = 'red'
     else if (deviceId === game.blackPlayer.deviceId) myColor = 'black'
 
+    // If this game is a tournament match, update lastSeen for the viewer and
+    // transition the match from READY to STARTED when both players are present.
+    if (deviceId && myColor) {
+      const color = myColor as 'red' | 'black'
+      await Game.findOneAndUpdate({ roomId }, { $set: { [`lastSeen.${color}`]: new Date() } })
+      await maybeAdvanceTournamentMatch(roomId, color)
+    }
+
+    // If game is finished, ensure tournament result is submitted (handles edge cases
+    // like resign-via-heartbeat-timeout where the move route didn't run).
+    if (game.status === 'finished' && game.winner) {
+      const { TournamentMatch } = await import('@/models/Tournament')
+      const tm = await TournamentMatch.findOne({ gameId: roomId })
+      if (tm && tm.status !== 'COMPLETED') {
+        await submitTournamentResultOnFinish(roomId, game.winner, game.endReason, deviceId ?? game.redPlayer.deviceId)
+      }
+    }
+
     const timeRemaining = game.timeRemaining.toObject?.() ?? game.timeRemaining
 
     return NextResponse.json({
@@ -151,4 +169,109 @@ async function updateElo(
   }
 }
 
-export { updateElo }
+/**
+ * If this game is a tournament match and currently READY, check if both players have
+ * a recent heartbeat. If yes, transition the match to STARTED.
+ */
+async function maybeAdvanceTournamentMatch(roomId: string, viewerColor: 'red' | 'black') {
+  try {
+    const { TournamentMatch } = await import('@/models/Tournament')
+    const match = await TournamentMatch.findOne({ gameId: roomId })
+    if (!match || match.status !== 'READY') return
+
+    const game = await Game.findOne({ roomId })
+    if (!game) return
+
+    const now = Date.now()
+    const redSeen = game.lastSeen?.red?.getTime?.() ?? game.lastSeen?.red
+    const blackSeen = game.lastSeen?.black?.getTime?.() ?? game.lastSeen?.black
+    const RECENT_MS = 60_000
+    const bothPresent =
+      redSeen && now - new Date(redSeen).getTime() < RECENT_MS &&
+      blackSeen && now - new Date(blackSeen).getTime() < RECENT_MS
+
+    if (bothPresent) {
+      match.status = 'STARTED'
+      match.startedAt = match.startedAt ?? new Date()
+      await match.save()
+    }
+  } catch (err) {
+    console.error('maybeAdvanceTournamentMatch error:', err)
+  }
+}
+
+async function submitTournamentResultOnFinish(
+  roomId: string,
+  winner: 'red' | 'black' | 'draw',
+  endReason: string | null,
+  submittedByDeviceId: string
+) {
+  try {
+    const { Tournament, TournamentMatch, TournamentParticipant } = await import('@/models/Tournament')
+    const match = await TournamentMatch.findOne({ gameId: roomId })
+    if (!match || match.status === 'COMPLETED') return
+    const tournament = await Tournament.findOne({ tournamentId: match.tournamentId }).lean()
+    if (!tournament) return
+
+    const winnerSide = winner === 'red' ? 'PLAYER1' : winner === 'black' ? 'PLAYER2' : 'DRAW'
+    match.status = 'COMPLETED'
+    match.completedAt = new Date()
+    match.result = {
+      winner: winnerSide,
+      score1: null,
+      score2: null,
+      resultType: 'GAME_ENDED',
+      endReason: endReason ?? null,
+      submittedByDeviceId,
+      submittedAt: new Date(),
+      version: (match.result.version ?? 0) + 1,
+    }
+    await match.save()
+
+    const winPoints = tournament.settings.winPoints
+    const drawPoints = tournament.settings.drawPoints
+    const p1 = match.player1?.deviceId
+    const p2 = match.player2?.deviceId
+
+    if (winnerSide === 'PLAYER1' && p1) {
+      await TournamentParticipant.updateOne(
+        { tournamentId: match.tournamentId, deviceId: p1 },
+        { $inc: { 'stats.played': 1, 'stats.wins': 1, 'stats.points': winPoints } }
+      )
+      if (p2) {
+        await TournamentParticipant.updateOne(
+          { tournamentId: match.tournamentId, deviceId: p2 },
+          { $inc: { 'stats.played': 1, 'stats.losses': 1 } }
+        )
+      }
+    } else if (winnerSide === 'PLAYER2' && p2) {
+      await TournamentParticipant.updateOne(
+        { tournamentId: match.tournamentId, deviceId: p2 },
+        { $inc: { 'stats.played': 1, 'stats.wins': 1, 'stats.points': winPoints } }
+      )
+      if (p1) {
+        await TournamentParticipant.updateOne(
+          { tournamentId: match.tournamentId, deviceId: p1 },
+          { $inc: { 'stats.played': 1, 'stats.losses': 1 } }
+        )
+      }
+    } else if (winnerSide === 'DRAW') {
+      if (p1) {
+        await TournamentParticipant.updateOne(
+          { tournamentId: match.tournamentId, deviceId: p1 },
+          { $inc: { 'stats.played': 1, 'stats.draws': 1, 'stats.points': drawPoints } }
+        )
+      }
+      if (p2) {
+        await TournamentParticipant.updateOne(
+          { tournamentId: match.tournamentId, deviceId: p2 },
+          { $inc: { 'stats.played': 1, 'stats.draws': 1, 'stats.points': drawPoints } }
+        )
+      }
+    }
+  } catch (err) {
+    console.error('submitTournamentResultOnFinish error:', err)
+  }
+}
+
+export { updateElo, maybeAdvanceTournamentMatch, submitTournamentResultOnFinish }

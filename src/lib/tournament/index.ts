@@ -17,34 +17,39 @@ export interface MatchPairing {
 
 /**
  * Generate round-robin pairings using circle (round-robin) method.
- * For N players: N rounds, N/2 matches per round (if N even) or (N+1)/2 rounds with one BYE per round (if N odd).
+ * Each pair of players meets exactly once.
+ *
+ * For N players (even): N-1 rounds, N/2 matches per round. Total: N(N-1)/2 matches.
+ * For N players (odd): N rounds, (N-1)/2 matches per round, 1 player rests each round.
+ *   Total: N(N-1)/2 matches, no BYE matches.
+ *
+ * No BYE matches are created. If a player has no opponent in a slot, we just skip that slot.
  */
 export function generateRoundRobinPairings(participants: ParticipantSeed[]): MatchPairing[][] {
   const n = participants.length
   if (n < 2) return []
 
-  // Pad with BYE if odd
-  const slots = n % 2 === 0 ? [...participants] : [...participants, null]
-  const total = slots.length
-  const rounds = total - 1
+  const isOdd = n % 2 === 1
+  const rounds = isOdd ? n : n - 1
+  const matchesPerRound = Math.floor(n / 2)
+
+  // For odd N, the "fixed" player rotates through who rests each round.
+  // We use a fixed index 0, and rotate indices 1..n-1.
+  const indices = Array.from({ length: n }, (_, i) => i)
+  const fixed = indices[0]
+  const rotating = indices.slice(1)
 
   const result: MatchPairing[][] = []
-  const fixed = slots[0]
-  const rotating = slots.slice(1)
-
   for (let r = 0; r < rounds; r++) {
     const ordered = [fixed, ...rotating]
     const round: MatchPairing[] = []
-    for (let i = 0; i < total / 2; i++) {
+    for (let i = 0; i < matchesPerRound; i++) {
       const a = ordered[i]
-      const b = ordered[total - 1 - i]
-      if (!a || !b) {
-        if (a) {
-          round.push({ player1: a, player2: null, isBye: true })
-        }
-        continue
-      }
-      round.push({ player1: a, player2: b, isBye: false })
+      const b = ordered[ordered.length - 1 - i]
+      const pA = participants[a]
+      const pB = participants[b]
+      if (!pA || !pB) continue
+      round.push({ player1: pA, player2: pB, isBye: false })
     }
     result.push(round)
     // Rotate: move last of rotating to front
