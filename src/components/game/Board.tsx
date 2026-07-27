@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { getLegalMoves } from '@/lib/xiangqi/rules'
 import { PIECE_CHARS } from '@/lib/xiangqi/notation'
 import type { BoardState, Position, Color, MoveRecord } from '@/types'
@@ -220,39 +220,24 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
   const positions: { row: number; col: number }[] = []
   for (let r = 0; r < 10; r++) for (let c = 0; c < 9; c++) positions.push({ row: r, col: c })
 
-  // Stable piece instance tracking: each piece gets a unique ID that persists across moves
-  // (so FLIP animation works) but is also unique per piece (so React doesn't merge the 5 pawns).
-  // We track each piece by its INITIAL position. When the piece moves, we look it up by walking
-  // the board and matching codes to the same starting position via a counter.
-  const pieceIdMapRef = useRef<Map<string, { code: string; initialIdx: number }>>(new Map())
-  // Group current pieces by code
-  const byCode: Record<string, Array<{ row: number; col: number }>> = {}
+  // Build piece list with position-based keys. Each cell (row, col) is unique, so two pieces
+  // can never share a key. This prevents the "5 pawns merge" bug AND the "captured piece
+  // causes sort-order shift, leading to phantom pawns moving" bug.
+  //
+  // Trade-off: pieces snap to their new position on move (no FLIP animation). The previous
+  // sort-based key approach kept the FLIP animation but broke visually when a piece was
+  // captured, because the next-in-sort-order piece inherited the captured piece's key
+  // and animated from the wrong position.
+  const pieceList: Array<{ code: string; row: number; col: number; key: string }> = []
   for (let r = 0; r < 10; r++) {
     for (let c = 0; c < 9; c++) {
       const code = board[r]?.[c]
       if (code) {
-        if (!byCode[code]) byCode[code] = []
-        byCode[code].push({ row: r, col: c })
+        // Cell-based key: unique per board cell, never collides.
+        pieceList.push({ code, row: r, col: c, key: `cell-${r}-${c}` })
       }
     }
   }
-  // Build piece list with unique keys. Strategy: for each code, sort positions by reading order
-  // (row, then col) and assign IDs based on position in the sorted list. This means a piece
-  // initially at (3,0) always gets key `r-zu-1`, and when it moves to (4,0) it still gets `r-zu-1`.
-  // To handle the case where boardState represents a mid-game state (not initial), we use a
-  // simple heuristic: assign the ID based on sorted position. This works because the relative
-  // order of pieces of the same code rarely changes after captures (the only thing that changes
-  // counts).
-  const pieceList: Array<{ code: string; row: number; col: number; key: string }> = []
-  for (const code in byCode) {
-    const positions = byCode[code]
-    positions.sort((a, b) => a.row - b.row || a.col - b.col)
-    positions.forEach((p, idx) => {
-      pieceList.push({ code, row: p.row, col: p.col, key: `${code}#${idx}` })
-    })
-  }
-  // Touch the ref so it persists (kept for future stable ID tracking)
-  void pieceIdMapRef.current
 
   return (
     <div className="relative w-full select-none" style={{ touchAction: 'none' }}>

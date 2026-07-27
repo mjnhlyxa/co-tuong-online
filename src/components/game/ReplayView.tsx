@@ -180,39 +180,52 @@ export default function ReplayView({ moves, redPlayer, blackPlayer, result, init
           className="w-full accent-[var(--c-accent)]"
         />
 
-        {/* Buttons */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
+        {/* Buttons - stacked in 2 rows: row 1 = arrows, row 2 = autoplay + speed.
+            Skip icons (Đầu/Cuối) use a vertical bar + arrow, distinct from prev/next. */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-center gap-1">
             <button
               onClick={() => setStep(0)}
               className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]"
-              title="Đầu"
+              title="Về đầu trận"
+              aria-label="Về đầu trận"
             >
-              <Icon name="arrow-left" size={14} className="rotate-180" />
+              {/* skip-to-start: bar + left arrow */}
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <rect x="3" y="3" width="2" height="10" rx="0.5" />
+                <path d="M14 3.5v9a0.5 0.5 0 0 1-0.8 0.4L7 8.4a0.5 0.5 0 0 1 0-0.8l6.2-4.5A0.5 0.5 0 0 1 14 3.5z" />
+              </svg>
             </button>
             <button
               onClick={() => setStep(s => Math.max(0, s - 1))}
               className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]"
-              title="Trước"
+              title="Bước trước"
+              aria-label="Bước trước"
             >
               <Icon name="arrow-left" size={14} />
             </button>
             <button
               onClick={() => setStep(s => Math.min(moves.length, s + 1))}
               className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]"
-              title="Sau"
+              title="Bước sau"
+              aria-label="Bước sau"
             >
               <Icon name="arrow-right" size={14} />
             </button>
             <button
               onClick={() => setStep(moves.length)}
               className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]"
-              title="Cuối"
+              title="Về cuối trận"
+              aria-label="Về cuối trận"
             >
-              <Icon name="arrow-right" size={14} className="rotate-180" />
+              {/* skip-to-end: right arrow + bar */}
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M2 3.5v9a0.5 0.5 0 0 0 0.8 0.4l6.2-4.5a0.5 0.5 0 0 0 0-0.8L2.8 3.1A0.5 0.5 0 0 0 2 3.5z" />
+                <rect x="11" y="3" width="2" height="10" rx="0.5" />
+              </svg>
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2">
             <button
               onClick={() => setAutoplay(a => !a)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 ${
@@ -275,22 +288,28 @@ export default function ReplayView({ moves, redPlayer, blackPlayer, result, init
           onChange={(e) => setStep(parseInt(e.target.value))}
           className="w-full accent-[var(--c-accent)]"
         />
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
-            <button onClick={() => setStep(0)} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Đầu">
-              <Icon name="arrow-left" size={14} className="rotate-180" />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-center gap-1">
+            <button onClick={() => setStep(0)} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Về đầu trận" aria-label="Về đầu trận">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <rect x="3" y="3" width="2" height="10" rx="0.5" />
+                <path d="M14 3.5v9a0.5 0.5 0 0 1-0.8 0.4L7 8.4a0.5 0.5 0 0 1 0-0.8l6.2-4.5A0.5 0.5 0 0 1 14 3.5z" />
+              </svg>
             </button>
-            <button onClick={() => setStep(s => Math.max(0, s - 1))} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Trước">
+            <button onClick={() => setStep(s => Math.max(0, s - 1))} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Bước trước" aria-label="Bước trước">
               <Icon name="arrow-left" size={14} />
             </button>
-            <button onClick={() => setStep(s => Math.min(moves.length, s + 1))} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Sau">
+            <button onClick={() => setStep(s => Math.min(moves.length, s + 1))} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Bước sau" aria-label="Bước sau">
               <Icon name="arrow-right" size={14} />
             </button>
-            <button onClick={() => setStep(moves.length)} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Cuối">
-              <Icon name="arrow-right" size={14} className="rotate-180" />
+            <button onClick={() => setStep(moves.length)} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Về cuối trận" aria-label="Về cuối trận">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M2 3.5v9a0.5 0.5 0 0 0 0.8 0.4l6.2-4.5a0.5 0.5 0 0 0 0-0.8L2.8 3.1A0.5 0.5 0 0 0 2 3.5z" />
+                <rect x="11" y="3" width="2" height="10" rx="0.5" />
+              </svg>
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2">
             <button onClick={() => setAutoplay(a => !a)} className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 ${autoplay ? 'bg-[var(--c-accent)] text-[var(--c-accent-text)]' : 'bg-[var(--c-elevated)] text-[var(--c-text-secondary)] hover:bg-[var(--c-elevated-2)]'}`}>
               <Icon name={autoplay ? 'pause' : 'play'} size={12} />
               {autoplay ? 'Tạm dừng' : 'Tự động'}
