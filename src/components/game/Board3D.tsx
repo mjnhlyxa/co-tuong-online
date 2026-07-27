@@ -188,12 +188,50 @@ function RiverTexture() {
   )
 }
 
+/** Generate procedural wood texture with grain + knots */
+function createWoodTexture(): THREE.Texture {
+  const c = document.createElement('canvas')
+  c.width = 512; c.height = 512
+  const ctx = c.getContext('2d')!
+  // Base wood color
+  ctx.fillStyle = '#d8b878'
+  ctx.fillRect(0, 0, 512, 512)
+  // Horizontal grain lines
+  for (let i = 0; i < 80; i++) {
+    ctx.strokeStyle = `rgba(139,105,20,${0.04 + Math.random() * 0.08})`
+    ctx.lineWidth = 1 + Math.random() * 2
+    ctx.beginPath()
+    const y = i * 6 + Math.random() * 4
+    ctx.moveTo(0, y)
+    ctx.bezierCurveTo(128, y + Math.random() * 4, 256, y + Math.random() * 4, 512, y + Math.random() * 4)
+    ctx.stroke()
+  }
+  // Knots (subtle dark spots)
+  for (let i = 0; i < 6; i++) {
+    const x = Math.random() * 512, y = Math.random() * 512
+    const r = 6 + Math.random() * 14
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, r)
+    grad.addColorStop(0, 'rgba(101,67,33,0.4)')
+    grad.addColorStop(1, 'rgba(101,67,33,0)')
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  const tex = new THREE.CanvasTexture(c)
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
 function BoardBase() {
   // Generate grid lines as thin boxes (more visible than LineBasicMaterial)
   const lineW = 0.022
   const lineH = 0.008
   const lineMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#3a2a14', roughness: 0.6 }), [])
   const palaceLineMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#5a3814', roughness: 0.6 }), [])
+  // Wood texture for board surface
+  const woodTex = useMemo(() => createWoodTexture(), [])
 
   const lines: React.ReactElement[] = []
   // 10 horizontal lines
@@ -259,10 +297,10 @@ function BoardBase() {
         <boxGeometry args={[10 * CELL + 0.6, 0.1, 11 * CELL + 0.6]} />
         <meshStandardMaterial color="#5a3814" roughness={0.85} />
       </mesh>
-      {/* Board surface - thicker for depth */}
+      {/* Board surface - wood texture */}
       <mesh receiveShadow position={[0, 0.01, 0]}>
         <boxGeometry args={[9 * CELL, 0.03, 10 * CELL]} />
-        <meshStandardMaterial color="#d8b878" roughness={0.7} metalness={0.05} />
+        <meshStandardMaterial map={woodTex} roughness={0.65} metalness={0.05} />
       </mesh>
       {/* Grid lines */}
       {lines}
@@ -418,10 +456,11 @@ export default function Board3D({ board, myColor, currentTurn, lastMove, isInChe
         gl={{ antialias: true, alpha: true }}
       >
         <color attach="background" args={['#0a0e1a']} />
-        <ambientLight intensity={0.55} />
+        <ambientLight intensity={0.5} />
+        {/* Main key light from top, casts shadows */}
         <directionalLight
-          position={[3, 12, 4]}
-          intensity={1.3}
+          position={[2, 14, 3]}
+          intensity={1.4}
           castShadow
           shadow-mapSize={[2048, 2048]}
           shadow-camera-far={30}
@@ -429,9 +468,14 @@ export default function Board3D({ board, myColor, currentTurn, lastMove, isInChe
           shadow-camera-right={8}
           shadow-camera-top={8}
           shadow-camera-bottom={-8}
+          shadow-bias={-0.0005}
         />
-        <directionalLight position={[-4, 8, -3]} intensity={0.35} color="#a0c4ff" />
-        <pointLight position={[0, 6, 0]} intensity={0.3} color="#ffe4b5" />
+        {/* Fill light from front-left (cool tone) */}
+        <directionalLight position={[-4, 8, -3]} intensity={0.4} color="#a0c4ff" />
+        {/* Rim light from back (warm) */}
+        <directionalLight position={[0, 5, -6]} intensity={0.35} color="#ffe4b5" />
+        {/* Soft top fill */}
+        <pointLight position={[0, 6, 0]} intensity={0.25} color="#fff8e1" />
 
         <BoardBase />
 
