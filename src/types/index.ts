@@ -22,6 +22,7 @@ export interface MoveRecord {
   notation: string
   timestamp: string
   isCheck: boolean
+  boardAfter?: (string | null)[][]
 }
 
 export interface PlayerInfo {

@@ -94,7 +94,8 @@ export async function POST(
       notation,
       timestamp: new Date(),
       isCheck: check,
-      boardSnapshot: board, // save pre-move board for takeback
+      boardSnapshot: board, // pre-move for takeback
+      boardAfter: newBoard, // post-move for replay (already computed above)
     }
 
     let winner: 'red' | 'black' | null = null

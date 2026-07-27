@@ -166,7 +166,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<{ device
               {history.slice(0, 15).map((g, i) => (
                 <a
                   key={i}
-                  href={`/game/${g.roomId}`}
+                  href={`/game/${g.roomId}/replay`}
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--c-elevated)]/40 transition-colors"
                 >
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xs font-black ${

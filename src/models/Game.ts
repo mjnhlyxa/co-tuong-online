@@ -19,6 +19,7 @@ export interface IGame extends Document {
     timestamp: Date
     isCheck: boolean
     boardSnapshot?: (string | null)[][]
+    boardAfter?: (string | null)[][]
   }>
   lastSeen: { red: Date; black: Date }
   timeControl: number | null
@@ -62,6 +63,7 @@ const MoveSchema = new Schema({
   timestamp: { type: Date, default: Date.now },
   isCheck: { type: Boolean, default: false },
   boardSnapshot: { type: [[Schema.Types.Mixed]], default: undefined },
+  boardAfter: { type: [[Schema.Types.Mixed]], default: undefined },
 }, { _id: false })
 
 const GameSchema = new Schema<IGame>({

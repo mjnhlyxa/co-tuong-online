@@ -90,15 +90,24 @@ export default function GameResult({ game, myColor, onClose, onPlayAgain }: Game
           <PlayerColumn name={game.blackPlayer?.name ?? 'Đen'} color="black" isWinner={game.winner === 'black'} />
         </div>
 
-        <div className="flex gap-3 pt-2">
-          {onPlayAgain && (
-            <Button variant="primary" fullWidth onClick={onPlayAgain} icon={<Icon name="refresh" size={16} />}>
-              {t('playAgain') || 'Chơi lại'}
+        <div className="flex flex-col gap-2 pt-2">
+          <a
+            href={`/game/${game.roomId}/replay`}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--c-elevated)] hover:bg-[var(--c-elevated-2)] text-[var(--c-text)] font-semibold text-sm transition-colors border border-[var(--c-border)]"
+          >
+            <Icon name="history" size={14} className="text-[var(--c-accent)]" />
+            Xem lại ván đấu
+          </a>
+          <div className="flex gap-2">
+            {onPlayAgain && (
+              <Button variant="primary" fullWidth onClick={onPlayAgain} icon={<Icon name="refresh" size={16} />}>
+                {t('playAgain') || 'Chơi lại'}
+              </Button>
+            )}
+            <Button variant="secondary" fullWidth onClick={onClose} icon={<Icon name="back" size={16} />}>
+              {t('backToLobby') || 'Về lobby'}
             </Button>
-          )}
-          <Button variant="secondary" fullWidth onClick={onClose} icon={<Icon name="back" size={16} />}>
-            {t('backToLobby') || 'Về lobby'}
-          </Button>
+          </div>
         </div>
       </div>
     </Modal>
