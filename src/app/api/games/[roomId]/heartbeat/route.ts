@@ -4,6 +4,8 @@ import { Game } from '@/models/Game'
 import { Room } from '@/models/Room'
 import { updateElo } from '../route'
 
+const ABANDONED_TIMEOUT_MS = 90_000
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
@@ -25,12 +27,30 @@ export async function POST(
     // Update last seen
     await Game.findOneAndUpdate({ roomId }, { $set: { [`lastSeen.${color}`]: new Date() } })
 
+    // Reload game to get fresh state after lastSeen update
+    const freshGame = await Game.findOne({ roomId })
+    if (!freshGame || freshGame.status !== 'playing') return NextResponse.json({ success: true })
+
+    // Abandoned detection: if the OPPONENT of the heartbeating player hasn't sent a heartbeat
+    // in 90s, they lose. The heartbeating player wins.
+    // (We only check the opponent, not self — self just heartbeated, so they're definitely online.)
+    const opponent = color === 'red' ? 'black' : 'red'
+    const now = Date.now()
+    const opponentLastSeen = freshGame.lastSeen?.[opponent]
+    if (opponentLastSeen && now - new Date(opponentLastSeen).getTime() > ABANDONED_TIMEOUT_MS) {
+      await Game.findOneAndUpdate({ roomId }, {
+        $set: { winner: color, endReason: 'abandoned', status: 'finished', finishedAt: new Date() }
+      })
+      await Room.findOneAndUpdate({ roomId }, { status: 'finished' })
+      await updateElo(freshGame.redPlayer.deviceId, freshGame.blackPlayer.deviceId, color, freshGame)
+      return NextResponse.json({ success: true })
+    }
+
     // Check timeout - if opponent has run out of time, they lose
-    if (game.timeControl && game.lastMoveAt && game.status === 'playing') {
-      const opponent = color === 'red' ? 'black' : 'red'
-      const timeRemainingObj = game.timeRemaining?.toObject?.() ?? game.timeRemaining
+    if (freshGame.timeControl && freshGame.lastMoveAt) {
+      const timeRemainingObj = freshGame.timeRemaining?.toObject?.() ?? freshGame.timeRemaining
       const opponentTime = timeRemainingObj[opponent]
-      const elapsed = Date.now() - game.lastMoveAt.getTime()
+      const elapsed = Date.now() - freshGame.lastMoveAt.getTime()
       const actualRemaining = opponentTime - elapsed
 
       if (actualRemaining <= 0) {
@@ -39,7 +59,7 @@ export async function POST(
           $set: { winner: color, endReason: 'timeout', status: 'finished', finishedAt: new Date() }
         })
         await Room.findOneAndUpdate({ roomId }, { status: 'finished' })
-        await updateElo(game.redPlayer.deviceId, game.blackPlayer.deviceId, color, game)
+        await updateElo(freshGame.redPlayer.deviceId, freshGame.blackPlayer.deviceId, color, freshGame)
       }
     }
 

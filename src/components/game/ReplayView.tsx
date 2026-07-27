@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Board from './Board'
+import PlayerPanel from './PlayerPanel'
 import Icon from '@/components/ui/Icon'
 import { getInitialBoard } from '@/lib/xiangqi/board'
-import type { BoardState, Color, MoveRecord } from '@/types'
+import type { BoardState, Color, MoveRecord, GameState } from '@/types'
 
 interface ReplayViewProps {
   moves: MoveRecord[]
@@ -85,10 +86,40 @@ export default function ReplayView({ moves, redPlayer, blackPlayer, result, init
     )
   }
 
+  // Build a minimal GameState-like object for PlayerPanel
+  const replayGameState: GameState = {
+    roomId: 'replay',
+    status: 'finished',
+    currentTurn,
+    currentMoveNumber: step,
+    boardState: computedBoard,
+    moves: moves.slice(0, step),
+    redPlayer: { deviceId: redPlayer.deviceId, name: redPlayer.name, eloAtStart: 0 },
+    blackPlayer: { deviceId: blackPlayer.deviceId, name: blackPlayer.name, eloAtStart: 0 },
+    winner: result.winner,
+    endReason: (result.endReason ?? null) as GameState['endReason'],
+    myColor: null,
+    timeControl: null,
+    timeRemaining: { red: 0, black: 0 },
+    lastMoveAt: null,
+    allowSpectators: false,
+    allowTakeback: false,
+    spectators: [],
+    chat: [],
+    mutedDeviceIds: [],
+    takebackRequest: null,
+    takebacksUsed: { red: 0, black: 0 },
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      {/* Board with current position */}
-      <div>
+    <div className="flex flex-col lg:flex-row gap-4">
+      {/* Board with current position — flex-1 to take available space */}
+      <div className="flex flex-col gap-3 flex-1 min-w-0">
+        {/* Mobile only: top player panel */}
+        <div className="lg:hidden">
+          <PlayerPanel game={replayGameState} color="black" position="top" isMyColor={false} />
+        </div>
+
         <Board
           board={computedBoard}
           myColor="red"
@@ -98,10 +129,20 @@ export default function ReplayView({ moves, redPlayer, blackPlayer, result, init
           disabled
           onMove={() => {}}
         />
+
+        {/* Mobile only: bottom player panel */}
+        <div className="lg:hidden">
+          <PlayerPanel game={replayGameState} color="red" position="bottom" isMyColor={false} />
+        </div>
       </div>
 
-      {/* Replay controls */}
-      <div className="glass-panel rounded-xl p-4 space-y-3">
+      {/* Desktop: side player panels + controls stacked vertically */}
+      <div className="hidden lg:flex flex-col gap-3 w-56 xl:w-64 shrink-0">
+        <PlayerPanel game={replayGameState} color="black" position="top" isMyColor={false} />
+        <PlayerPanel game={replayGameState} color="red" position="bottom" isMyColor={false} />
+
+        {/* Replay controls */}
+        <div className="glass-panel rounded-xl p-4 space-y-3">
         {/* Move info */}
         <div className="flex items-center justify-between">
           <div className="text-sm">
@@ -188,6 +229,73 @@ export default function ReplayView({ moves, redPlayer, blackPlayer, result, init
               onChange={(e) => setSpeed(parseFloat(e.target.value))}
               className="bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-lg px-2 py-1 text-xs text-[var(--c-text)] cursor-pointer"
             >
+              <option value="0.5">0.5x</option>
+              <option value="1">1x</option>
+              <option value="2">2x</option>
+              <option value="4">4x</option>
+            </select>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      {/* Mobile: replay controls below the board */}
+      <div className="lg:hidden glass-panel rounded-xl p-4 space-y-3">
+        {/* Move info */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm">
+            <span className="font-bold text-[var(--c-text)] tabular-nums">
+              {step}/{moves.length}
+            </span>
+            {currentMove && (
+              <span className="ml-3 text-[var(--c-text-secondary)]">
+                {currentMove.notation}
+                {currentMove.captured && <span className="ml-1 text-xs text-[var(--c-muted)]">ăn {currentMove.captured}</span>}
+                {currentMove.isCheck && <span className="ml-1 text-xs text-[var(--c-danger)]">chiếu</span>}
+              </span>
+            )}
+            {!currentMove && <span className="ml-3 text-[var(--c-muted)]">Vị trí ban đầu</span>}
+          </div>
+          {result.winner && step === moves.length && (
+            <span className={`text-xs font-bold uppercase ${
+              result.winner === 'red' ? 'text-[var(--c-danger)]' :
+              result.winner === 'black' ? 'text-[var(--c-piece-black)]' :
+              'text-[var(--c-muted)]'
+            }`}>
+              {result.winner === 'red' ? redPlayer.name :
+               result.winner === 'black' ? blackPlayer.name : 'Hòa'} thắng
+            </span>
+          )}
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={moves.length}
+          value={step}
+          onChange={(e) => setStep(parseInt(e.target.value))}
+          className="w-full accent-[var(--c-accent)]"
+        />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
+            <button onClick={() => setStep(0)} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Đầu">
+              <Icon name="arrow-left" size={14} className="rotate-180" />
+            </button>
+            <button onClick={() => setStep(s => Math.max(0, s - 1))} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Trước">
+              <Icon name="arrow-left" size={14} />
+            </button>
+            <button onClick={() => setStep(s => Math.min(moves.length, s + 1))} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Sau">
+              <Icon name="arrow-right" size={14} />
+            </button>
+            <button onClick={() => setStep(moves.length)} className="p-2 rounded-lg hover:bg-[var(--c-elevated)] text-[var(--c-muted)] hover:text-[var(--c-text)]" title="Cuối">
+              <Icon name="arrow-right" size={14} className="rotate-180" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setAutoplay(a => !a)} className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 ${autoplay ? 'bg-[var(--c-accent)] text-[var(--c-accent-text)]' : 'bg-[var(--c-elevated)] text-[var(--c-text-secondary)] hover:bg-[var(--c-elevated-2)]'}`}>
+              <Icon name={autoplay ? 'pause' : 'play'} size={12} />
+              {autoplay ? 'Tạm dừng' : 'Tự động'}
+            </button>
+            <select value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))} className="bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-lg px-2 py-1 text-xs text-[var(--c-text)] cursor-pointer">
               <option value="0.5">0.5x</option>
               <option value="1">1x</option>
               <option value="2">2x</option>

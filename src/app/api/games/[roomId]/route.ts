@@ -5,7 +5,7 @@ import { Player } from '@/models/Player'
 import { Room } from '@/models/Room'
 import { calculateElo, getTier } from '@/lib/elo'
 
-const ABANDONED_TIMEOUT_MS = 30_000
+const ABANDONED_TIMEOUT_MS = 90_000
 
 export async function GET(
   req: NextRequest,
@@ -38,38 +38,11 @@ export async function GET(
       await Room.findOneAndUpdate({ roomId }, { status: 'finished' })
     }
 
-    // Abandoned detection: if playing and current player hasn't sent heartbeat in 30s
-    if (game.status === 'playing') {
-      const now = Date.now()
-      const lastSeenCurrent = game.lastSeen[game.currentTurn as 'red' | 'black']
-      if (lastSeenCurrent && now - lastSeenCurrent.getTime() > ABANDONED_TIMEOUT_MS) {
-        const winner = game.currentTurn === 'red' ? 'black' : 'red'
-        game.winner = winner
-        game.endReason = 'abandoned'
-        game.status = 'finished'
-        game.finishedAt = new Date()
-        await game.save()
-        await markRoomFinished()
-        await updateElo(game.redPlayer.deviceId, game.blackPlayer.deviceId, winner, game)
-      }
-    }
-
-    // Timeout check
-    if (game.status === 'playing' && game.timeControl && game.lastMoveAt) {
-      const elapsed = Date.now() - game.lastMoveAt.getTime()
-      const turn = game.currentTurn as 'red' | 'black'
-      const remaining = game.timeRemaining[turn] - elapsed
-      if (remaining <= 0) {
-        const winner = turn === 'red' ? 'black' : 'red'
-        game.winner = winner
-        game.endReason = 'timeout'
-        game.status = 'finished'
-        game.finishedAt = new Date()
-        await game.save()
-        await markRoomFinished()
-        await updateElo(game.redPlayer.deviceId, game.blackPlayer.deviceId, winner, game)
-      }
-    }
+    // Note: abandoned detection and timeout are now handled by POST /heartbeat only.
+    // GET is a read-only endpoint — it must not mutate game state, otherwise an opponent's
+    // poll could end the game while the active player is still thinking.
+    // (Previously the abandoned check ran on every GET, which caused spurious resigns when
+    // the 30s threshold raced against the 20s heartbeat interval.)
 
     // Reload in case we mutated
     game = await Game.findOne({ roomId })

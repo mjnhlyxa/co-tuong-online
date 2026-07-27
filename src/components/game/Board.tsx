@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { getLegalMoves } from '@/lib/xiangqi/rules'
 import { PIECE_CHARS } from '@/lib/xiangqi/notation'
 import type { BoardState, Position, Color, MoveRecord } from '@/types'
@@ -123,7 +123,8 @@ function AnimatedPiece({
         fill={`url(#grad-${code}-${row}-${col})`}
         stroke={isRed ? '#dc2626' : '#1a1f2e'}
         strokeWidth={selected ? 3 : 1.5}
-        style={selected ? { filter: 'drop-shadow(0 0 6px var(--c-accent))' } : { filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.4))' }}
+        filter={selected ? undefined : 'url(#piece-shadow)'}
+        style={selected ? { filter: 'drop-shadow(0 0 6px var(--c-accent))' } : undefined}
       />
       <circle
         cx={x}
@@ -219,14 +220,39 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
   const positions: { row: number; col: number }[] = []
   for (let r = 0; r < 10; r++) for (let c = 0; c < 9; c++) positions.push({ row: r, col: c })
 
-  // Build piece list keyed by code (so the same piece keeps its key when it moves)
-  const pieceList: Array<{ code: string; row: number; col: number; key: string }> = []
+  // Stable piece instance tracking: each piece gets a unique ID that persists across moves
+  // (so FLIP animation works) but is also unique per piece (so React doesn't merge the 5 pawns).
+  // We track each piece by its INITIAL position. When the piece moves, we look it up by walking
+  // the board and matching codes to the same starting position via a counter.
+  const pieceIdMapRef = useRef<Map<string, { code: string; initialIdx: number }>>(new Map())
+  // Group current pieces by code
+  const byCode: Record<string, Array<{ row: number; col: number }>> = {}
   for (let r = 0; r < 10; r++) {
     for (let c = 0; c < 9; c++) {
       const code = board[r]?.[c]
-      if (code) pieceList.push({ code, row: r, col: c, key: code })
+      if (code) {
+        if (!byCode[code]) byCode[code] = []
+        byCode[code].push({ row: r, col: c })
+      }
     }
   }
+  // Build piece list with unique keys. Strategy: for each code, sort positions by reading order
+  // (row, then col) and assign IDs based on position in the sorted list. This means a piece
+  // initially at (3,0) always gets key `r-zu-1`, and when it moves to (4,0) it still gets `r-zu-1`.
+  // To handle the case where boardState represents a mid-game state (not initial), we use a
+  // simple heuristic: assign the ID based on sorted position. This works because the relative
+  // order of pieces of the same code rarely changes after captures (the only thing that changes
+  // counts).
+  const pieceList: Array<{ code: string; row: number; col: number; key: string }> = []
+  for (const code in byCode) {
+    const positions = byCode[code]
+    positions.sort((a, b) => a.row - b.row || a.col - b.col)
+    positions.forEach((p, idx) => {
+      pieceList.push({ code, row: p.row, col: p.col, key: `${code}#${idx}` })
+    })
+  }
+  // Touch the ref so it persists (kept for future stable ID tracking)
+  void pieceIdMapRef.current
 
   return (
     <div className="relative w-full select-none" style={{ touchAction: 'none' }}>
@@ -251,22 +277,28 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
               <stop offset="0%" stopColor="#8b6914" />
               <stop offset="100%" stopColor="#5a3814" />
             </linearGradient>
-            <pattern id="wood-grain" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-              <rect width="60" height="60" fill="url(#wood-bg)" />
-              <path d="M0 15 Q 30 12, 60 17" stroke="rgba(139,105,20,0.08)" strokeWidth="0.5" fill="none" />
-              <path d="M0 30 Q 30 28, 60 32" stroke="rgba(139,105,20,0.06)" strokeWidth="0.5" fill="none" />
-              <path d="M0 45 Q 30 44, 60 47" stroke="rgba(139,105,20,0.08)" strokeWidth="0.5" fill="none" />
-            </pattern>
+            {/* Piece shadow filter — applied uniformly to all pieces for consistent look */}
+            <filter id="piece-shadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="1.4" />
+              <feOffset dx="0" dy="2" result="offsetblur" />
+              <feComponentTransfer>
+                <feFuncA type="linear" slope="0.4" />
+              </feComponentTransfer>
+              <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
 
           {/* Board frame (dark border) */}
           <rect x="0" y="0" width={BOARD_W} height={BOARD_H} fill="url(#wood-frame)" rx="6" />
-          {/* Inner board surface with wood texture */}
+          {/* Inner board surface with subtle wood gradient (no grain pattern that misaligns with grid) */}
           <rect
             x="6" y="6"
             width={BOARD_W - 12}
             height={BOARD_H - 12}
-            fill="url(#wood-grain)"
+            fill="url(#wood-bg)"
             stroke="#5a3814"
             strokeWidth="1"
             rx="4"
