@@ -120,6 +120,7 @@ export default function GamePage({ params }: { params: Params }) {
   }, [game?.status])
 
   // SFX: play sounds on move / capture / check (initialized later when boardInCheck is available)
+  // All hooks must be called BEFORE any early return
   const prevMovesRef = useRef<number>(0)
   const prevInCheckRef = useRef<boolean>(false)
 
@@ -137,6 +138,22 @@ export default function GamePage({ params }: { params: Params }) {
     }
     prevTakebackStatusRef.current = currentStatus
   }, [game?.takebackRequest?.status, game?.takebackRequest?.fromColor, game?.myColor])
+
+  useEffect(() => {
+    initSound()
+    if (!game || game.status !== 'playing') return
+    const currentMoveCount = game.moves?.length ?? 0
+    if (currentMoveCount > prevMovesRef.current) {
+      const lastMove = game.moves?.[currentMoveCount - 1]
+      if (lastMove?.captured) playCapture()
+      else playMove()
+    }
+    prevMovesRef.current = currentMoveCount
+
+    const inCheckNow = game.currentTurn && isInCheck(game.boardState ?? [], game.currentTurn)
+    if (inCheckNow && !prevInCheckRef.current) playCheck()
+    prevInCheckRef.current = !!inCheckNow
+  }, [game?.moves?.length, game?.status, game?.currentTurn, game?.boardState])
 
   // ---- Registration handlers ----
   async function handleRegister() {
@@ -301,23 +318,6 @@ export default function GamePage({ params }: { params: Params }) {
   const bottomColor: Color = myColor === 'black' ? 'black' : 'red'
 
   const boardInCheck = isInCheck(playingGame.boardState, playingGame.currentTurn)
-
-  // SFX: play sounds on move / capture / check
-  useEffect(() => {
-    initSound()
-    if (!game) return
-    if (game.status !== 'playing') return
-    const currentMoveCount = game.moves?.length ?? 0
-    if (currentMoveCount > prevMovesRef.current) {
-      const lastMove = game.moves?.[currentMoveCount - 1]
-      if (lastMove?.captured) playCapture()
-      else playMove()
-    }
-    prevMovesRef.current = currentMoveCount
-
-    if (boardInCheck && !prevInCheckRef.current) playCheck()
-    prevInCheckRef.current = boardInCheck
-  }, [game?.moves?.length, boardInCheck, game?.status])
 
   const takebacksUsedByMe = myColor ? playingGame.takebacksUsed[myColor] : 0
   const canTakeback = isPlayer &&
