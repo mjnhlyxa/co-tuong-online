@@ -233,7 +233,6 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
       <div className="relative inline-block w-full" style={{ maxWidth: BOARD_W }}>
         <svg
           width="100%"
-          height="auto"
           viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
           className="block rounded-lg"
           style={{
