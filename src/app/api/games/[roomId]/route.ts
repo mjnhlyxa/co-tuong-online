@@ -55,9 +55,28 @@ export async function GET(
 
     // If this game is a tournament match, update lastSeen for the viewer and
     // transition the match from READY to STARTED when both players are present.
+    // Also transition game status from 'waiting' to 'playing' when both
+    // players are detected.
     if (deviceId && myColor) {
       const color = myColor as 'red' | 'black'
-      await Game.findOneAndUpdate({ roomId }, { $set: { [`lastSeen.${color}`]: new Date() } })
+      const now = new Date()
+      await Game.findOneAndUpdate({ roomId }, { $set: { [`lastSeen.${color}`]: now } })
+
+      // Transition 'waiting' -> 'playing' when BOTH players have a recent lastSeen
+      const fresh = await Game.findOne({ roomId })
+      if (fresh && fresh.status === 'waiting') {
+        const redSeen = fresh.lastSeen?.red
+        const blackSeen = fresh.lastSeen?.black
+        const RECENT_MS = 5 * 60 * 1000 // 5 min — players just joined, so they ARE online
+        if (
+          redSeen && blackSeen &&
+          now.getTime() - new Date(redSeen).getTime() < RECENT_MS &&
+          now.getTime() - new Date(blackSeen).getTime() < RECENT_MS
+        ) {
+          await Game.findOneAndUpdate({ roomId }, { $set: { status: 'playing', startedAt: fresh.startedAt ?? now } })
+        }
+      }
+
       await maybeAdvanceTournamentMatch(roomId, color)
     }
 

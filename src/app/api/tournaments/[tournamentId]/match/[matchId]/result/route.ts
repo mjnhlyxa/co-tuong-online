@@ -53,6 +53,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tou
       await reverseStats(tournamentId, match, tournament.settings.winPoints, tournament.settings.drawPoints)
     }
 
+    // Also update the underlying game's status to 'finished' if it's a tournament match.
+    // This handles the case where the game ended via non-checkmate means (resign, timeout,
+    // material decision) and we need to mark it as finished so replay/stats work correctly.
+    if (match.gameId) {
+      const { Game } = await import('@/models/Game')
+      const endReason =
+        winner === 'DRAW' ? 'draw_agreement' :
+        winner === 'PLAYER1' ? 'tournament_report' :
+        'tournament_report'
+      const gameWinner =
+        winner === 'PLAYER1' ? 'red' :
+        winner === 'PLAYER2' ? 'black' :
+        'draw'
+      await Game.findOneAndUpdate(
+        { roomId: match.gameId, status: { $ne: 'finished' } },
+        {
+          $set: {
+            status: 'finished',
+            winner: gameWinner,
+            endReason,
+            finishedAt: new Date(),
+          },
+        }
+      )
+    }
+
     match.status = 'COMPLETED'
     match.completedAt = new Date()
     match.result = {
