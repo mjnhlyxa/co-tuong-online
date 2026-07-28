@@ -389,7 +389,7 @@ export default function GamePage({ params }: { params: Params }) {
           {/* Mobile/tablet: header bar + opponent panel + board + my panel stacked vertically */}
           <div className="flex flex-col flex-1 items-center gap-1 sm:gap-2 min-w-0">
             {/* Match header bar */}
-            <div className="w-full max-w-[760px] glass-panel rounded-xl px-3 py-2 flex items-center justify-between gap-2">
+            <div className="w-full max-w-[864px] glass-panel rounded-xl px-3 py-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <Icon name="trophy" size={14} className="text-[var(--c-accent)] shrink-0" />
                 <div className="min-w-0">
@@ -416,13 +416,13 @@ export default function GamePage({ params }: { params: Params }) {
             </div>
 
             {/* Mobile only: opponent panel above board */}
-            <div className="w-full max-w-[760px] lg:hidden">
+            <div className="w-full max-w-[864px] lg:hidden">
               <PlayerPanel game={playingGame} color={topColor} position="top" isMyColor={false} />
             </div>
 
             {/* Turn indicator arrow (mobile only - desktop uses sidebar indicator) */}
             {playingGame.status === 'playing' && (
-              <div className="w-full max-w-[760px] flex justify-center -my-1 lg:hidden">
+              <div className="w-full max-w-[864px] flex justify-center -my-1 lg:hidden">
                 <div className={`px-3 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
                   playingGame.currentTurn === topColor
                     ? 'bg-[var(--c-accent)] text-[var(--c-accent-text)] animate-pulse'
@@ -434,8 +434,8 @@ export default function GamePage({ params }: { params: Params }) {
               </div>
             )}
 
-            {/* Board - max-w-[760px] to fill more screen */}
-            <div className="flex-shrink-0 w-full max-w-[760px] relative">
+            {/* Board - max-w-[864px] to fill more screen, bigger than before (864 vs 760) */}
+            <div className="flex-shrink-0 w-full max-w-[864px] relative">
               <Board
                 board={playingGame.boardState}
                 myColor={myColor}
@@ -448,7 +448,7 @@ export default function GamePage({ params }: { params: Params }) {
             </div>
 
             {/* Mobile only: my panel below board */}
-            <div className="w-full max-w-[760px] lg:hidden">
+            <div className="w-full max-w-[864px] lg:hidden">
               <PlayerPanel game={playingGame} color={bottomColor} position="bottom" isMyColor={!!myColor} />
             </div>
 

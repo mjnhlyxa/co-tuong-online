@@ -5,9 +5,9 @@ import { getLegalMoves } from '@/lib/xiangqi/rules'
 import { PIECE_CHARS } from '@/lib/xiangqi/notation'
 import type { BoardState, Position, Color, MoveRecord } from '@/types'
 
-const CELL = 64
+const CELL = 78
 const PADDING = 40
-const PIECE_R = 28
+const PIECE_R = 34
 const BOARD_W = 8 * CELL + 2 * PADDING
 const BOARD_H = 9 * CELL + 2 * PADDING
 
@@ -247,7 +247,7 @@ export default function Board({ board, myColor, currentTurn, lastMove, isInCheck
           viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
           className="block rounded-lg"
           style={{
-            maxHeight: 'min(85vh, 700px)',
+            maxHeight: 'min(90vh, 820px)',
             filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.4))',
           }}
         >

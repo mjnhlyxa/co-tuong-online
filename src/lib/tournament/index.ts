@@ -16,44 +16,52 @@ export interface MatchPairing {
 }
 
 /**
- * Generate round-robin pairings using circle (round-robin) method.
+ * Generate round-robin pairings using the standard circle method.
  * Each pair of players meets exactly once.
  *
- * For N players (even): N-1 rounds, N/2 matches per round. Total: N(N-1)/2 matches.
- * For N players (odd): N rounds, (N-1)/2 matches per round, 1 player rests each round.
- *   Total: N(N-1)/2 matches, no BYE matches.
+ * Algorithm (handles both even and odd N):
+ * - For odd N, pad with a "ghost" (null) to make it even
+ * - Use circle method: fix index 0, rotate the rest each round
+ * - For odd N: when a match involves the ghost, skip it (the other player rests)
  *
- * No BYE matches are created. If a player has no opponent in a slot, we just skip that slot.
+ * Total matches = N(N-1)/2 (no BYE).
+ *
+ * For N=3: 3 rounds × 1 real match = 3 matches (each player plays 2, rests 1)
+ *   Round 1: P1 vs P2 (P3 rests)
+ *   Round 2: P1 vs P3 (P2 rests)
+ *   Round 3: P2 vs P3 (P1 rests)
  */
 export function generateRoundRobinPairings(participants: ParticipantSeed[]): MatchPairing[][] {
   const n = participants.length
   if (n < 2) return []
 
-  const isOdd = n % 2 === 1
-  const rounds = isOdd ? n : n - 1
-  const matchesPerRound = Math.floor(n / 2)
+  // Pad with ghost (null) if odd so total is even
+  const slots: Array<ParticipantSeed | null> = [...participants]
+  if (n % 2 === 1) slots.push(null)
+  const total = slots.length
+  const rounds = total - 1
+  const matchesPerRound = total / 2
 
-  // For odd N, the "fixed" player rotates through who rests each round.
-  // We use a fixed index 0, and rotate indices 1..n-1.
-  const indices = Array.from({ length: n }, (_, i) => i)
-  const fixed = indices[0]
-  const rotating = indices.slice(1)
+  // Initialize order: 0 fixed, 1..n-1 rotate
+  const order: Array<number | null> = Array.from({ length: total }, (_, i) => i < n ? i : null)
+  // For ghost slot, use null which we'll skip when pairing
 
   const result: MatchPairing[][] = []
   for (let r = 0; r < rounds; r++) {
-    const ordered = [fixed, ...rotating]
     const round: MatchPairing[] = []
     for (let i = 0; i < matchesPerRound; i++) {
-      const a = ordered[i]
-      const b = ordered[ordered.length - 1 - i]
-      const pA = participants[a]
-      const pB = participants[b]
+      const a = order[i]
+      const b = order[order.length - 1 - i]
+      if (a === null || a === undefined || b === null || b === undefined) continue
+      const pA = slots[a] ?? null
+      const pB = slots[b] ?? null
       if (!pA || !pB) continue
       round.push({ player1: pA, player2: pB, isBye: false })
     }
     result.push(round)
-    // Rotate: move last of rotating to front
-    rotating.unshift(rotating.pop()!)
+    // Rotate: keep order[0] fixed, take the last element and insert at position 1
+    const last = order.pop()!
+    order.splice(1, 0, last)
   }
 
   return result

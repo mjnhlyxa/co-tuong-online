@@ -143,32 +143,31 @@ export default function ReplayView({ moves, redPlayer, blackPlayer, result, init
 
         {/* Replay controls */}
         <div className="glass-panel rounded-xl p-4 space-y-3">
-        {/* Move info */}
-        <div className="flex items-center justify-between">
-          <div className="text-sm">
-            <span className="font-bold text-[var(--c-text)] tabular-nums">
-              {step}/{moves.length}
-            </span>
-            {currentMove && (
-              <span className="ml-3 text-[var(--c-text-secondary)]">
-                {currentMove.notation}
-                {currentMove.captured && <span className="ml-1 text-xs text-[var(--c-muted)]">ăn {currentMove.captured}</span>}
-                {currentMove.isCheck && <span className="ml-1 text-xs text-[var(--c-danger)]">chiếu</span>}
+          {/* Move info: fixed height so controls don't jump when text changes */}
+          <div className="min-h-[2.5rem] flex flex-col justify-center">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-bold text-[var(--c-text)] tabular-nums">
+                {step}/{moves.length}
               </span>
-            )}
-            {!currentMove && <span className="ml-3 text-[var(--c-muted)]">Vị trí ban đầu</span>}
+              <span className="ml-2 text-[var(--c-text-secondary)] truncate flex-1 text-right text-xs">
+                {currentMove
+                  ? `${currentMove.notation}${currentMove.captured ? ` · ăn ${currentMove.captured}` : ''}${currentMove.isCheck ? ' · chiếu' : ''}`
+                  : 'Vị trí ban đầu'}
+              </span>
+            </div>
+            <div className="min-h-[1.25rem] mt-0.5">
+              {result.winner && step === moves.length && (
+                <span className={`text-[10px] font-bold uppercase ${
+                  result.winner === 'red' ? 'text-[var(--c-danger)]' :
+                  result.winner === 'black' ? 'text-[var(--c-piece-black)]' :
+                  'text-[var(--c-muted)]'
+                }`}>
+                  {result.winner === 'red' ? redPlayer.name :
+                   result.winner === 'black' ? blackPlayer.name : 'Hòa'} thắng
+                </span>
+              )}
+            </div>
           </div>
-          {result.winner && step === moves.length && (
-            <span className={`text-xs font-bold uppercase ${
-              result.winner === 'red' ? 'text-[var(--c-danger)]' :
-              result.winner === 'black' ? 'text-[var(--c-piece-black)]' :
-              'text-[var(--c-muted)]'
-            }`}>
-              {result.winner === 'red' ? redPlayer.name :
-               result.winner === 'black' ? blackPlayer.name : 'Hòa'} thắng
-            </span>
-          )}
-        </div>
 
         {/* Slider */}
         <input
@@ -254,31 +253,30 @@ export default function ReplayView({ moves, redPlayer, blackPlayer, result, init
 
       {/* Mobile: replay controls below the board */}
       <div className="lg:hidden glass-panel rounded-xl p-4 space-y-3">
-        {/* Move info */}
-        <div className="flex items-center justify-between">
-          <div className="text-sm">
+        {/* Move info: fixed height so controls don't jump when text changes */}
+        <div className="min-h-[2.5rem] flex flex-col justify-center">
+          <div className="flex items-center justify-between text-sm">
             <span className="font-bold text-[var(--c-text)] tabular-nums">
               {step}/{moves.length}
             </span>
-            {currentMove && (
-              <span className="ml-3 text-[var(--c-text-secondary)]">
-                {currentMove.notation}
-                {currentMove.captured && <span className="ml-1 text-xs text-[var(--c-muted)]">ăn {currentMove.captured}</span>}
-                {currentMove.isCheck && <span className="ml-1 text-xs text-[var(--c-danger)]">chiếu</span>}
+            <span className="ml-2 text-[var(--c-text-secondary)] truncate flex-1 text-right text-xs">
+              {currentMove
+                ? `${currentMove.notation}${currentMove.captured ? ` · ăn ${currentMove.captured}` : ''}${currentMove.isCheck ? ' · chiếu' : ''}`
+                : 'Vị trí ban đầu'}
+            </span>
+          </div>
+          <div className="min-h-[1.25rem] mt-0.5">
+            {result.winner && step === moves.length && (
+              <span className={`text-[10px] font-bold uppercase ${
+                result.winner === 'red' ? 'text-[var(--c-danger)]' :
+                result.winner === 'black' ? 'text-[var(--c-piece-black)]' :
+                'text-[var(--c-muted)]'
+              }`}>
+                {result.winner === 'red' ? redPlayer.name :
+                 result.winner === 'black' ? blackPlayer.name : 'Hòa'} thắng
               </span>
             )}
-            {!currentMove && <span className="ml-3 text-[var(--c-muted)]">Vị trí ban đầu</span>}
           </div>
-          {result.winner && step === moves.length && (
-            <span className={`text-xs font-bold uppercase ${
-              result.winner === 'red' ? 'text-[var(--c-danger)]' :
-              result.winner === 'black' ? 'text-[var(--c-piece-black)]' :
-              'text-[var(--c-muted)]'
-            }`}>
-              {result.winner === 'red' ? redPlayer.name :
-               result.winner === 'black' ? blackPlayer.name : 'Hòa'} thắng
-            </span>
-          )}
         </div>
         <input
           type="range"

@@ -4,7 +4,7 @@ export interface IGame extends Document {
   roomId: string
   redPlayer: { deviceId: string; name: string; eloAtStart: number }
   blackPlayer: { deviceId: string; name: string; eloAtStart: number }
-  status: 'playing' | 'finished'
+  status: 'waiting' | 'playing' | 'finished'
   currentTurn: 'red' | 'black'
   currentMoveNumber: number
   boardState: (string | null)[][]
@@ -70,7 +70,7 @@ const GameSchema = new Schema<IGame>({
   roomId: { type: String, required: true, unique: true },
   redPlayer: { deviceId: String, name: String, eloAtStart: Number },
   blackPlayer: { deviceId: String, name: String, eloAtStart: Number },
-  status: { type: String, enum: ['playing', 'finished'], default: 'playing' },
+  status: { type: String, enum: ['waiting', 'playing', 'finished'], default: 'playing' },
   currentTurn: { type: String, enum: ['red', 'black'], default: 'red' },
   currentMoveNumber: { type: Number, default: 0 },
   boardState: { type: [[Schema.Types.Mixed]], required: true },
